@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#134E40">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QC Console">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23134E40'/%3E%3Cpath d='M26 12h12v14l9 18a5 5 0 01-4.5 7H21.5A5 5 0 0117 44l9-18z' fill='none' stroke='%23fff' stroke-width='3' stroke-linejoin='round'/%3E%3Cline x1='23' y1='34' x2='41' y2='34' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<title>QC Console</title>
+<style>
+  :root{
+    --bg:#F4F6F4; --panel:#FFFFFF; --border:#DDE4DE; --ink:#16231C; --ink-muted:#5D6D63; --ink-faint:#8B978F;
+    --accent:#1F6F5C; --accent-deep:#134E40; --accent-soft:#DFEEE8;
+    --warn:#B8842E; --warn-soft:#F6EAD3; --reject:#AB3A34; --reject-soft:#F5DEDC; --grid:#E3E9E3;
+    --sans: system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    --mono: ui-monospace,'SFMono-Regular',Menlo,Consolas,'Roboto Mono',monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  input,select,button{font-family:inherit;}
+  ::placeholder{color:var(--ink-faint);}
+  button{cursor:pointer;}
+  .btn{border:none;border-radius:6px;font-size:13px;font-weight:600;padding:9px 16px;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-ghost{background:none;border:1px solid var(--border);color:var(--ink-muted);}
+  .icon-btn{background:none;border:none;color:var(--ink-faint);padding:4px;}
+  .field{display:block;font-size:12px;font-weight:500;color:var(--ink-muted);margin-bottom:12px;}
+  .field input{width:100%;margin-top:4px;padding:9px 10px;border-radius:5px;border:1px solid var(--border);font-size:15px;color:var(--ink);background:#fff;}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:3px;border:1px solid transparent;white-space:nowrap;}
+  .badge.accept{color:var(--accent);background:var(--accent-soft);border-color:#1F6F5C33;}
+  .badge.warning{color:var(--warn);background:var(--warn-soft);border-color:#B8842E33;}
+  .badge.reject{color:var(--reject);background:var(--reject-soft);border-color:#AB3A3433;}
+  header.app-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-icon{width:28px;height:28px;border-radius:6px;background:var(--accent-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand-title{font-size:14px;font-weight:700;letter-spacing:-0.01em;}
+  .brand-sub{font-size:10.5px;color:var(--ink-muted);font-family:var(--mono);}
+  .save-state{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);}
+  main{padding:14px 14px 40px;max-width:760px;margin:0 auto;}
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 10px;-webkit-overflow-scrolling:touch;}
+  .tab{flex-shrink:0;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:var(--panel);font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .tab.active{background:var(--accent-soft);border-color:#1F6F5C55;color:var(--accent-deep);font-weight:600;}
+  .newtest-btn{flex-shrink:0;padding:8px 12px;border-radius:7px;border:1px dashed var(--accent);background:none;color:var(--accent-deep);font-size:12.5px;font-weight:600;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:16px;margin-bottom:14px;}
+  .panel-tight{padding:14px 6px 6px;}
+  h2{font-size:16.5px;font-weight:700;margin:0 0 2px;}
+  .target-line{font-size:11.5px;color:var(--ink-muted);font-family:var(--mono);}
+  .stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;}
+  @media(min-width:520px){.stats-row{grid-template-columns:repeat(3,1fr);}}
+  .stat-label{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .stat-value{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:2px;}
+  .stat-sub{font-size:10.5px;color:var(--ink-muted);}
+  .empty{text-align:center;color:var(--ink-faint);font-size:12.5px;padding:34px 10px;line-height:1.6;}
+  form.run-form{display:flex;flex-wrap:wrap;gap:10px;}
+  form.run-form .field{flex:1 1 130px;min-width:110px;}
+  .run-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--border);border-left:3px solid var(--ink-faint);font-family:var(--mono);font-size:11.5px;flex-wrap:wrap;}
+  .run-row:last-child{border-bottom:none;}
+  .run-date{width:56px;color:var(--ink-muted);flex-shrink:0;}
+  .run-val{width:80px;flex-shrink:0;}
+  .run-z{width:64px;flex-shrink:0;}
+  .run-flags{flex:1;display:flex;gap:4px;flex-wrap:wrap;min-width:80px;}
+  .run-log-head{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase;margin:16px 2px 8px;}
+  .err{font-size:12px;color:var(--reject);margin-top:8px;display:flex;align-items:center;gap:5px;}
+  .confirm-inline{display:flex;gap:3px;}
+  .confirm-inline button{border:none;border-radius:4px;padding:3px 6px;font-size:11px;}
+  .confirm-yes{background:var(--reject);color:#fff;}
+  .confirm-no{background:none;border:1px solid var(--border) !important;color:var(--ink-muted);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  .hint{font-size:11.5px;color:var(--ink-muted);line-height:1.5;margin:2px 0 14px;}
+  .install-tip{display:flex;gap:8px;align-items:flex-start;background:var(--accent-soft);border:1px solid #1F6F5C33;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--accent-deep);line-height:1.5;margin:0 0 14px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var COLORS = { accent:"#1F6F5C", warn:"#B8842E", reject:"#AB3A34", grid:"#E3E9E3", accentDeep:"#134E40", inkFaint:"#8B978F", inkMuted:"#5D6D63", accentSoft:"#DFEEE8", warnSoft:"#F6EAD3", rejectSoft:"#F5DEDC" };
+
+  var RULE_LABELS = {
+    "1_2s": { label: "1\u2082s", kind: "warning" },
+    "1_3s": { label: "1\u2083s", kind: "reject" },
+    "2_2s": { label: "2\u2082s", kind: "reject" },
+    "R_4s": { label: "R\u2084s", kind: "reject" },
+    "4_1s": { label: "4\u2081s", kind: "reject" },
+    "10x":  { label: "10x\u0304", kind: "reject" }
+  };
+  var REJECT_RULES = ["1_3s","2_2s","R_4s","4_1s","10x"];
+
+  function evaluateSeries(zScores){
+    return zScores.map(function(_, i){
+      var upTo = zScores.slice(0, i+1);
+      var last = upTo[upTo.length-1];
+      var flags = [];
+      if (Math.abs(last) > 3) flags.push("1_3s");
+      if (Math.abs(last) > 2) flags.push("1_2s");
+      if (upTo.length >= 2){
+        var prev = upTo[upTo.length-2];
+        if (Math.abs(last) > 2 && Math.abs(prev) > 2 && Math.sign(last) === Math.sign(prev)) flags.push("2_2s");
+        if (Math.abs(last - prev) > 4) flags.push("R_4s");
+      }
+      if (upTo.length >= 4){
+        var last4 = upTo.slice(-4);
+        if (last4.every(function(z){return z>1;}) || last4.every(function(z){return z<-1;})) flags.push("4_1s");
+      }
+      if (upTo.length >= 10){
+        var last10 = upTo.slice(-10);
+        if (last10.every(function(z){return z>0;}) || last10.every(function(z){return z<0;})) flags.push("10x");
+      }
+      var isReject = flags.some(function(f){return REJECT_RULES.indexOf(f) !== -1;});
+      var status = isReject ? "reject" : (flags.indexOf("1_2s") !== -1 ? "warning" : "accept");
+      return { flags: flags, status: status };
+    });
+  }
+
+  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+  function fmtDate(iso){
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function statusColor(s){ return s === "reject" ? COLORS.reject : s === "warning" ? COLORS.warn : COLORS.accent; }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  }); }
+
+  // ---------- state ----------
+  var state = { tests: [], runs: [], selectedTestId: null, view: "panel", pendingDelete: null, saveState: "idle" };
+
+  function loadState(){
+    try {
+      var raw = localStorage.getItem("qc-data");
+      if (raw){
+        var parsed = JSON.parse(raw);
+        state.tests = parsed.tests || [];
+        state.runs = parsed.runs || [];
+        if (state.tests.length) state.selectedTestId = state.tests[0].id;
+      }
+    } catch(e) { /* first run or storage unavailable */ }
+  }
+  function persist(){
+    try {
+      localStorage.setItem("qc-data", JSON.stringify({ tests: state.tests, runs: state.runs }));
+      state.saveState = "idle";
+    } catch(e){
+      state.saveState = "error";
+    }
+  }
+
+  function seriesFor(test){
+    if (!test) return [];
+    var list = state.runs.filter(function(r){ return r.testId === test.id; })
+      .slice()
+      .sort(function(a,b){ return a.date === b.date ? a.createdAt - b.createdAt : a.date.localeCompare(b.date); });
+    var zScores = list.map(function(r){ return (r.value - test.mean) / test.sd; });
+    var evals = evaluateSeries(zScores);
+    return list.map(function(r, i){
+      var merged = {};
+      for (var k in r) merged[k] = r[k];
+      merged.seq = i+1;
+      merged.z = zScores[i];
+      merged.dateLabel = fmtDate(r.date);
+      merged.flags = evals[i].flags;
+      merged.status = evals[i].status;
+      return merged;
+    });
+  }
+
+  function observedStats(seriesData){
+    if (!seriesData.length) return null;
+    var vals = seriesData.map(function(d){ return d.value; });
+    var n = vals.length;
+    var mean = vals.reduce(function(a,b){return a+b;},0) / n;
+    var sd = n > 1 ? Math.sqrt(vals.reduce(function(a,b){return a+Math.pow(b-mean,2);},0) / (n-1)) : 0;
+    var cv = mean !== 0 ? (sd/mean)*100 : 0;
+    var counts = { accept:0, warning:0, reject:0 };
+    seriesData.forEach(function(d){ counts[d.status] = (counts[d.status]||0)+1; });
+    return { n:n, mean:mean, sd:sd, cv:cv, counts:counts, last: seriesData[seriesData.length-1] };
+  }
+
+  // ---------- SVG chart ----------
+  function buildChartSVG(test, seriesData){
+    var W = 680, H = 300, left = 46, right = 44, top = 16, bottom = 26;
+    var plotW = W - left - right, plotH = H - top - bottom;
+    var mean = test.mean, sd = test.sd;
+    var pad = sd * 0.7;
+    var yMin = mean - 3.5*sd - pad, yMax = mean + 3.5*sd + pad;
+    function y(v){ return top + (yMax - v) / (yMax - yMin) * plotH; }
+    var n = seriesData.length;
+    function x(seq){ return n <= 1 ? left + plotW/2 : left + (seq-1)/(n-1) * plotW; }
+
+    var parts = [];
+    parts.push('<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">');
+
+    // shaded bands
+    parts.push('<rect x="'+left+'" y="'+y(mean+3*sd)+'" width="'+plotW+'" height="'+(y(mean+2*sd)-y(mean+3*sd))+'" fill="'+COLORS.warn+'" opacity="0.08"/>');
+    parts.push('<rect x="'+left+'" y="'+y(mean-2*sd)+'" width="'+plotW+'" height="'+(y(mean-3*sd)-y(mean-2*sd))+'" fill="'+COLORS.warn+'" opacity="0.08"/>');
+    parts.push('<rect x="'+left+'" y="'+y(mean+2*sd)+'" width="'+plotW+'" height="'+(y(mean-2*sd)-y(mean+2*sd))+'" fill="'+COLORS.accent+'" opacity="0.06"/>');
+
+    // reference lines
+    [1,2,3].forEach(function(k){
+      [1,-1].forEach(function(sign){
+        var yy = y(mean + sign*k*sd);
+        parts.push('<line x1="'+left+'" y1="'+yy+'" x2="'+(left+plotW)+'" y2="'+yy+'" stroke="'+COLORS.grid+'" stroke-width="1" stroke-dasharray="3 3"/>');
+        parts.push('<text x="'+(left+plotW+4)+'" y="'+(yy+3)+'" font-size="9" fill="'+COLORS.inkFaint+'" font-family="ui-monospace,monospace">'+(sign>0?'+':'\u2212')+k+'SD</text>');
+      });
+    });
+    var yMeanPx = y(mean);
+    parts.push('<line x1="'+left+'" y1="'+yMeanPx+'" x2="'+(left+plotW)+'" y2="'+yMeanPx+'" stroke="'+COLORS.accentDeep+'" stroke-width="1.4"/>');
+    parts.push('<text x="'+(left+plotW+4)+'" y="'+(yMeanPx+3)+'" font-size="9" fill="'+COLORS.inkMuted+'" font-family="ui-monospace,monospace">mean</text>');
+
+    if (n > 0){
+      // connecting line
+      var pts = seriesData.map(function(d){ return x(d.seq)+","+y(d.value); }).join(" ");
+      parts.push('<polyline points="'+pts+'" fill="none" stroke="'+COLORS.inkFaint+'" stroke-width="1"/>');
+      // points
+      seriesData.forEach(function(d){
+        var r = d.status === "reject" ? 4.5 : 3.5;
+        parts.push('<circle cx="'+x(d.seq)+'" cy="'+y(d.value)+'" r="'+r+'" fill="'+statusColor(d.status)+'" stroke="#fff" stroke-width="1.2"/>');
+      });
+      // x labels (thin out if crowded)
+      var interval = Math.max(1, Math.ceil(n/7));
+      seriesData.forEach(function(d, i){
+        if (i % interval === 0 || i === n-1){
+          parts.push('<text x="'+x(d.seq)+'" y="'+(H-6)+'" font-size="9" fill="'+COLORS.inkMuted+'" font-family="ui-monospace,monospace" text-anchor="middle">'+esc(d.dateLabel)+'</text>');
+        }
+      });
+    }
+    parts.push('<line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(left+plotW)+'" y2="'+(top+plotH)+'" stroke="'+COLORS.grid+'"/>');
+    parts.push('</svg>');
+    return parts.join("");
+  }
+
+  // ---------- render ----------
+  function badgeHTML(status, text){
+    return '<span class="badge '+status+'">'+esc(text)+'</span>';
+  }
+
+  function render(){
+    var html = '';
+    html += '<header class="app-header"><div class="brand">'
+      + '<div class="brand-icon"><svg width="14" height="14" viewBox="0 0 64 64"><path d="M26 12h12v14l9 18a5 5 0 01-4.5 7H21.5A5 5 0 0117 44l9-18z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><line x1="23" y1="34" x2="41" y2="34" stroke="#fff" stroke-width="4"/></svg></div>'
+      + '<div><div class="brand-title">QC Console</div><div class="brand-sub">Westgard multirule monitoring</div></div>'
+      + '</div><div class="save-state">'+(state.saveState === "error" ? '<span style="color:'+COLORS.reject+'">SAVE FAILED</span>' : 'SAVED')+'</div></header>';
+
+    html += '<main>';
+
+    if (state.tests.length === 0 && !state.pendingNewTest){
+      html += '<div class="install-tip">Installed and running offline. Your QC data stays on this device only \u2014 add your first analyte below to start.</div>';
+    }
+
+    html += '<div class="tabs">';
+    var grouped = {};
+    state.tests.forEach(function(t){ (grouped[t.analyte] = grouped[t.analyte] || []).push(t); });
+    Object.keys(grouped).forEach(function(analyte){
+      grouped[analyte].forEach(function(t){
+        var active = t.id === state.selectedTestId && !state.pendingNewTest;
+        html += '<button class="tab'+(active?' active':'')+'" data-action="select-test" data-id="'+t.id+'">'+esc(analyte)+' \u00B7 '+esc(t.level)+'</button>';
+      });
+    });
+    html += '<button class="newtest-btn" data-action="show-new-test">+ New analyte / level</button>';
+    html += '</div>';
+
+    if (state.pendingNewTest){
+      html += renderNewTestForm();
+    } else {
+      var test = state.tests.find(function(t){ return t.id === state.selectedTestId; });
+      if (!test){
+        html += '<div class="empty">'+(state.tests.length ? 'Pick an analyte / level tab above.' : 'No QC tests yet. Tap \u201C+ New analyte / level\u201D to add your first control.')+'</div>';
+      } else {
+        html += renderTestPanel(test);
+      }
+    }
+
+    html += '</main>';
+    document.getElementById("app").innerHTML = html;
+    attachHandlers();
+  }
+
+  function renderNewTestForm(){
+    var e = state.formError || "";
+    return '<form class="panel" id="new-test-form">'
+      + '<h2>New analyte / control level</h2>'
+      + '<div class="hint">Establish the target mean and SD from \u226520 replicate measurements over \u226520 days, or take them from the control lot\u2019s assay sheet.</div>'
+      + '<div class="grid2">'
+      + field('Analyte','nt-analyte','text','e.g. Glucose')
+      + field('Control level','nt-level','text','e.g. Level 2')
+      + field('Unit','nt-unit','text','mg/dL')
+      + field('Lot number (optional)','nt-lot','text','e.g. 48213')
+      + field('Target mean','nt-mean','number','')
+      + field('Target SD','nt-sd','number','')
+      + '</div>'
+      + (e ? '<div class="err">\u26A0 '+esc(e)+'</div>' : '')
+      + '<div style="display:flex;gap:8px;">'
+      + '<button type="submit" class="btn btn-primary">Save test</button>'
+      + '<button type="button" class="btn btn-ghost" data-action="cancel-new-test">Cancel</button>'
+      + '</div></form>';
+  }
+  function field(label, id, type, placeholder){
+    return '<label class="field">'+esc(label)+'<input id="'+id+'" type="'+type+'" '+(type==='number'?'step="any"':'')+' placeholder="'+esc(placeholder)+'"></label>';
+  }
+
+  function renderTestPanel(test){
+    var seriesData = seriesFor(test);
+    var observed = observedStats(seriesData);
+    var html = '';
+    html += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:2px 2px 8px;">'
+      + '<div><h2>'+esc(test.analyte)+' \u00B7 '+esc(test.level)+'</h2>'
+      + '<div class="target-line">target '+test.mean+' \u00B1 '+test.sd+' '+esc(test.unit)+(test.lot ? ' \u00B7 lot '+esc(test.lot) : '')+'</div></div>'
+      + (observed && observed.last ? badgeHTML(observed.last.status, observed.last.status.toUpperCase()) : '')
+      + '<button class="icon-btn" data-action="delete-test" data-id="'+test.id+'" aria-label="Delete this test" style="margin-left:auto;">\uD83D\uDDD1</button>'
+      + '</div>';
+
+    if (state.pendingDelete && state.pendingDelete.type === 'test' && state.pendingDelete.id === test.id){
+      html += '<div class="panel" style="display:flex;align-items:center;gap:10px;"><span style="font-size:12.5px;">Delete this analyte/level and all its runs?</span>'
+        + '<div class="confirm-inline"><button class="confirm-yes" data-action="confirm-delete-test" data-id="'+test.id+'">Delete</button>'
+        + '<button class="confirm-no" data-action="cancel-delete">Cancel</button></div></div>';
+    }
+
+    if (observed){
+      html += '<div class="panel"><div class="stats-row">'
+        + stat('Runs', observed.n)
+        + stat('Observed mean', observed.mean.toFixed(2), 'target '+test.mean)
+        + stat('Observed SD', observed.sd.toFixed(2), 'target '+test.sd)
+        + stat('Observed CV', observed.cv.toFixed(1)+'%')
+        + stat('In control', observed.counts.accept+'/'+observed.n)
+        + (observed.counts.reject>0||observed.counts.warning>0 ? stat('Flagged', observed.counts.reject+'R / '+observed.counts.warning+'W') : '')
+        + '</div></div>';
+    }
+
+    html += '<div class="panel panel-tight">';
+    if (!seriesData.length){
+      html += '<div class="empty">No runs logged yet for this level. Add today\u2019s control result below.</div>';
+    } else {
+      html += buildChartSVG(test, seriesData);
+    }
+    html += '</div>';
+
+    var today = new Date().toISOString().slice(0,10);
+    html += '<form class="panel run-form" id="new-run-form" data-test-id="'+test.id+'">'
+      + '<label class="field">Date<input id="run-date" type="date" value="'+today+'"></label>'
+      + '<label class="field">Result ('+esc(test.unit||'value')+')<input id="run-value" type="number" step="any" placeholder="0.00"></label>'
+      + '<label class="field">Operator<input id="run-operator" type="text" placeholder="optional"></label>'
+      + '<label class="field">Comment<input id="run-comment" type="text" placeholder="optional"></label>'
+      + '<button type="submit" class="btn btn-primary" style="align-self:flex-start;">+ Log run</button>'
+      + (state.runFormError ? '<div class="err" style="width:100%;">\u26A0 '+esc(state.runFormError)+'</div>' : '')
+      + '</form>';
+
+    if (seriesData.length){
+      html += '<div class="run-log-head">Run log</div><div class="panel" style="padding:0;">';
+      seriesData.slice().reverse().forEach(function(d){
+        var confirming = state.pendingDelete && state.pendingDelete.type === 'run' && state.pendingDelete.id === d.id;
+        html += '<div class="run-row" style="border-left-color:'+statusColor(d.status)+';">'
+          + '<span class="run-date">'+esc(d.dateLabel)+'</span>'
+          + '<span class="run-val">'+d.value+' '+esc(test.unit)+'</span>'
+          + '<span class="run-z" style="color:'+statusColor(d.status)+';">'+(d.z>=0?'+':'')+d.z.toFixed(2)+'SD</span>'
+          + '<span class="run-flags">'+(d.flags.length ? d.flags.map(function(f){return badgeHTML(RULE_LABELS[f].kind, RULE_LABELS[f].label);}).join('') : '<span style="color:'+COLORS.inkFaint+'">\u2014</span>')+'</span>'
+          + (d.operator ? '<span style="color:'+COLORS.inkMuted+';font-size:10.5px;">'+esc(d.operator)+'</span>' : '')
+          + (!confirming
+              ? '<button class="icon-btn" data-action="delete-run" data-id="'+d.id+'" aria-label="Delete run">\uD83D\uDDD1</button>'
+              : '<div class="confirm-inline"><button class="confirm-yes" data-action="confirm-delete-run" data-id="'+d.id+'">\u2713</button><button class="confirm-no" data-action="cancel-delete">\u2715</button></div>')
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    return html;
+  }
+  function stat(label, value, sub){
+    return '<div><div class="stat-label">'+esc(label)+'</div><div class="stat-value">'+esc(value)+'</div>'+(sub?'<div class="stat-sub">'+esc(sub)+'</div>':'')+'</div>';
+  }
+
+  // ---------- events ----------
+  function attachHandlers(){
+    var app = document.getElementById("app");
+
+    app.onclick = function(e){
+      var t = e.target.closest("[data-action]");
+      if (!t) return;
+      var action = t.getAttribute("data-action");
+      var id = t.getAttribute("data-id");
+
+      if (action === "select-test"){ state.selectedTestId = id; state.pendingDelete = null; render(); }
+      else if (action === "show-new-test"){ state.pendingNewTest = true; state.formError = null; render(); }
+      else if (action === "cancel-new-test"){ state.pendingNewTest = false; render(); }
+      else if (action === "delete-test"){ state.pendingDelete = { type:"test", id:id }; render(); }
+      else if (action === "delete-run"){ state.pendingDelete = { type:"run", id:id }; render(); }
+      else if (action === "cancel-delete"){ state.pendingDelete = null; render(); }
+      else if (action === "confirm-delete-test"){
+        state.tests = state.tests.filter(function(x){ return x.id !== id; });
+        state.runs = state.runs.filter(function(x){ return x.testId !== id; });
+        if (state.selectedTestId === id) state.selectedTestId = state.tests.length ? state.tests[0].id : null;
+        state.pendingDelete = null; persist(); render();
+      }
+      else if (action === "confirm-delete-run"){
+        state.runs = state.runs.filter(function(x){ return x.id !== id; });
+        state.pendingDelete = null; persist(); render();
+      }
+    };
+
+    var newTestForm = document.getElementById("new-test-form");
+    if (newTestForm){
+      newTestForm.onsubmit = function(e){
+        e.preventDefault();
+        var analyte = document.getElementById("nt-analyte").value.trim();
+        var level = document.getElementById("nt-level").value.trim();
+        var unit = document.getElementById("nt-unit").value.trim();
+        var lot = document.getElementById("nt-lot").value.trim();
+        var mean = parseFloat(document.getElementById("nt-mean").value);
+        var sd = parseFloat(document.getElementById("nt-sd").value);
+        if (!analyte || !level){ state.formError = "Analyte and level are required."; render(); return; }
+        if (isNaN(mean) || isNaN(sd) || sd <= 0){ state.formError = "Enter a valid target mean and a positive SD."; render(); return; }
+        var test = { id: uid(), analyte:analyte, level:level, unit:unit, mean:mean, sd:sd, lot:lot };
+        state.tests.push(test);
+        state.selectedTestId = test.id;
+        state.pendingNewTest = false;
+        state.formError = null;
+        persist(); render();
+      };
+    }
+
+    var runForm = document.getElementById("new-run-form");
+    if (runForm){
+      runForm.onsubmit = function(e){
+        e.preventDefault();
+        var testId = runForm.getAttribute("data-test-id");
+        var date = document.getElementById("run-date").value;
+        var value = parseFloat(document.getElementById("run-value").value);
+        var operator = document.getElementById("run-operator").value.trim();
+        var comment = document.getElementById("run-comment").value.trim();
+        if (!date){ state.runFormError = "Pick a date."; render(); return; }
+        if (isNaN(value)){ state.runFormError = "Enter a numeric result."; render(); return; }
+        state.runs.push({ id: uid(), testId:testId, date:date, value:value, operator:operator, comment:comment, createdAt: Date.now() });
+        state.runFormError = null;
+        persist(); render();
+      };
+    }
+  }
+
+  loadState();
+  render();
+})();
+</script>
+</body>
+</html>
