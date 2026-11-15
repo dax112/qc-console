@@ -1,449 +1,1473 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#134E40">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="QC Console">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23134E40'/%3E%3Cpath d='M26 12h12v14l9 18a5 5 0 01-4.5 7H21.5A5 5 0 0117 44l9-18z' fill='none' stroke='%23fff' stroke-width='3' stroke-linejoin='round'/%3E%3Cline x1='23' y1='34' x2='41' y2='34' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
-<title>QC Console</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="claude:viewport-fit-sides" content="cover" />
+<title>Levey–Jennings QC Console</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
 <style>
-  :root{
-    --bg:#F4F6F4; --panel:#FFFFFF; --border:#DDE4DE; --ink:#16231C; --ink-muted:#5D6D63; --ink-faint:#8B978F;
-    --accent:#1F6F5C; --accent-deep:#134E40; --accent-soft:#DFEEE8;
-    --warn:#B8842E; --warn-soft:#F6EAD3; --reject:#AB3A34; --reject-soft:#F5DEDC; --grid:#E3E9E3;
-    --sans: system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-    --mono: ui-monospace,'SFMono-Regular',Menlo,Consolas,'Roboto Mono',monospace;
+/* ============================================================
+   DESIGN TOKENS — single source of truth for color & type
+   ============================================================ */
+:root{
+  /* Layout */
+  --sidebar-w: 280px;
+  --header-h: 60px;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --gap: 16px;
+  --gap-sm: 12px;
+
+  /* Light theme (default) */
+  --bg: #F4F6F4;
+  --panel: #FFFFFF;
+  --border: #DDE4DE;
+  --ink: #16231C;
+  --ink-muted: #5D6D63;
+  --ink-faint: #8B978F;
+  --accent: #1F6F5C;
+  --accent-deep: #134E40;
+  --accent-soft: #DFEEE8;
+  --warn: #B8842E;
+  --warn-soft: #F6EAD3;
+  --reject: #AB3A34;
+  --reject-soft: #F5DEDC;
+  --grid: #E3E9E3;
+  --shadow: rgba(22,35,28,0.06);
+  --shadow-strong: rgba(22,35,28,0.12);
+
+  /* Type */
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --fs-xs: 10.5px;
+  --fs-sm: 12px;
+  --fs-base: 13.5px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --fs-2xl: 22px;
+
+  /* Zones */
+  --zone-accept: var(--accent);
+  --zone-warn: var(--warn);
+  --zone-reject: var(--reject);
+}
+
+/* Dark theme — only tokens change */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg: #0F1410;
+    --panel: #141C16;
+    --border: #2A352D;
+    --ink: #E8EDE9;
+    --ink-muted: #A5B5AC;
+    --ink-faint: #74857C;
+    --accent: #4ADEA0;
+    --accent-deep: #2ED47A;
+    --accent-soft: #0A2A1E;
+    --warn: #F5C542;
+    --warn-soft: #3D320D;
+    --reject: #F87171;
+    --reject-soft: #3D1A1A;
+    --grid: #2A352D;
+    --shadow: rgba(0,0,0,0.25);
+    --shadow-strong: rgba(0,0,0,0.4);
+    color-scheme: dark;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
-  body{padding-bottom:env(safe-area-inset-bottom);}
-  input,select,button{font-family:inherit;}
-  ::placeholder{color:var(--ink-faint);}
-  button{cursor:pointer;}
-  .btn{border:none;border-radius:6px;font-size:13px;font-weight:600;padding:9px 16px;}
-  .btn-primary{background:var(--accent);color:#fff;}
-  .btn-ghost{background:none;border:1px solid var(--border);color:var(--ink-muted);}
-  .icon-btn{background:none;border:none;color:var(--ink-faint);padding:4px;}
-  .field{display:block;font-size:12px;font-weight:500;color:var(--ink-muted);margin-bottom:12px;}
-  .field input{width:100%;margin-top:4px;padding:9px 10px;border-radius:5px;border:1px solid var(--border);font-size:15px;color:var(--ink);background:#fff;}
-  .badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:3px;border:1px solid transparent;white-space:nowrap;}
-  .badge.accept{color:var(--accent);background:var(--accent-soft);border-color:#1F6F5C33;}
-  .badge.warning{color:var(--warn);background:var(--warn-soft);border-color:#B8842E33;}
-  .badge.reject{color:var(--reject);background:var(--reject-soft);border-color:#AB3A3433;}
-  header.app-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5;}
-  .brand{display:flex;align-items:center;gap:10px;}
-  .brand-icon{width:28px;height:28px;border-radius:6px;background:var(--accent-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .brand-title{font-size:14px;font-weight:700;letter-spacing:-0.01em;}
-  .brand-sub{font-size:10.5px;color:var(--ink-muted);font-family:var(--mono);}
-  .save-state{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);}
-  main{padding:14px 14px 40px;max-width:760px;margin:0 auto;}
-  .tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 10px;-webkit-overflow-scrolling:touch;}
-  .tab{flex-shrink:0;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:var(--panel);font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
-  .tab.active{background:var(--accent-soft);border-color:#1F6F5C55;color:var(--accent-deep);font-weight:600;}
-  .newtest-btn{flex-shrink:0;padding:8px 12px;border-radius:7px;border:1px dashed var(--accent);background:none;color:var(--accent-deep);font-size:12.5px;font-weight:600;}
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:16px;margin-bottom:14px;}
-  .panel-tight{padding:14px 6px 6px;}
-  h2{font-size:16.5px;font-weight:700;margin:0 0 2px;}
-  .target-line{font-size:11.5px;color:var(--ink-muted);font-family:var(--mono);}
-  .stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;}
-  @media(min-width:520px){.stats-row{grid-template-columns:repeat(3,1fr);}}
-  .stat-label{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
-  .stat-value{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:2px;}
-  .stat-sub{font-size:10.5px;color:var(--ink-muted);}
-  .empty{text-align:center;color:var(--ink-faint);font-size:12.5px;padding:34px 10px;line-height:1.6;}
-  form.run-form{display:flex;flex-wrap:wrap;gap:10px;}
-  form.run-form .field{flex:1 1 130px;min-width:110px;}
-  .run-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--border);border-left:3px solid var(--ink-faint);font-family:var(--mono);font-size:11.5px;flex-wrap:wrap;}
-  .run-row:last-child{border-bottom:none;}
-  .run-date{width:56px;color:var(--ink-muted);flex-shrink:0;}
-  .run-val{width:80px;flex-shrink:0;}
-  .run-z{width:64px;flex-shrink:0;}
-  .run-flags{flex:1;display:flex;gap:4px;flex-wrap:wrap;min-width:80px;}
-  .run-log-head{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase;margin:16px 2px 8px;}
-  .err{font-size:12px;color:var(--reject);margin-top:8px;display:flex;align-items:center;gap:5px;}
-  .confirm-inline{display:flex;gap:3px;}
-  .confirm-inline button{border:none;border-radius:4px;padding:3px 6px;font-size:11px;}
-  .confirm-yes{background:var(--reject);color:#fff;}
-  .confirm-no{background:none;border:1px solid var(--border) !important;color:var(--ink-muted);}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
-  .hint{font-size:11.5px;color:var(--ink-muted);line-height:1.5;margin:2px 0 14px;}
-  .install-tip{display:flex;gap:8px;align-items:flex-start;background:var(--accent-soft);border:1px solid #1F6F5C33;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--accent-deep);line-height:1.5;margin:0 0 14px;}
+}
+:root[data-theme="dark"]{
+  --bg: #0F1410;
+  --panel: #141C16;
+  --border: #2A352D;
+  --ink: #E8EDE9;
+  --ink-muted: #A5B5AC;
+  --ink-faint: #74857C;
+  --accent: #4ADEA0;
+  --accent-deep: #2ED47A;
+  --accent-soft: #0A2A1E;
+  --warn: #F5C542;
+  --warn-soft: #3D320D;
+  --reject: #F87171;
+  --reject-soft: #3D1A1A;
+  --grid: #2A352D;
+  --shadow: rgba(0,0,0,0.25);
+  --shadow-strong: rgba(0,0,0,0.4);
+  color-scheme: dark;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--font-ui);
+  font-size:var(--fs-base);
+  line-height:1.5;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::placeholder{color:var(--ink-faint)}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+input[type="date"]{padding:8px 10px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+/* ============================================================
+   ICONS (inline SVG from Lucide)
+   ============================================================ */
+.icon{display:inline-block;vertical-align:middle;flex-shrink:0}
+.icon-14{width:14px;height:14px}
+.icon-16{width:16px;height:16px}
+.icon-18{width:18px;height:18px}
+.icon-20{width:20px;height:20px}
+.icon-24{width:24px;height:24px}
+.icon-28{width:28px;height:28px}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.app-main{display:flex;flex:1;min-height:0}
+
+/* Header */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:var(--header-h);
+  border-bottom:1px solid var(--border);
+  background:var(--panel);
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:10;
+}
+.header-brand{display:flex;align-items:center;gap:10px}
+.header-icon{
+  width:36px;height:36px;border-radius:8px;background:var(--accent-deep);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.header-title{font-size:var(--fs-lg);font-weight:700;letter-spacing:-0.01em}
+.header-sub{font-size:var(--fs-xs);color:var(--ink-muted);font-family:var(--font-mono);margin-top:1px}
+.header-status{
+  font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--ink-faint);
+  display:flex;align-items:center;gap:6px;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:600;
+  letter-spacing:0.02em;padding:2px 7px;border-radius:3px;
+  border:1px solid transparent;
+}
+.badge-accept{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 20%,transparent)}
+.badge-warning{color:var(--warn);background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 20%,transparent)}
+.badge-reject{color:var(--reject);background:var(--reject-soft);border-color:color-mix(in srgb,var(--reject) 20%,transparent)}
+.badge-info{color:var(--ink-muted);background:color-mix(in srgb,var(--ink-muted) 10%,transparent);border-color:color-mix(in srgb,var(--ink-muted) 20%,transparent)}
+
+/* Sidebar */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  border-right:1px solid var(--border);
+  background:var(--panel);
+  padding:var(--gap) 12px;overflow-y:auto;
+}
+.btn-primary{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:9px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--accent);background:var(--accent-soft);
+  color:var(--accent-deep);font-size:var(--fs-sm);font-weight:600;
+  transition:background .12s ease,border-color .12s ease;
+}
+.btn-primary:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-ghost{
+  background:none;border:none;padding:4px;color:var(--ink-faint);
+  display:flex;align-items:center;justify-content:center;border-radius:4px;
+  transition:background .12s ease,color .12s ease;
+}
+.btn-ghost:hover{background:var(--border);color:var(--ink)}
+.btn-danger{
+  background:var(--reject);border:none;border-radius:4px;padding:3px 5px;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-danger:hover{filter:brightness(1.1)}
+.btn-secondary{
+  padding:8px 16px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:none;color:var(--ink-muted);
+  font-size:var(--fs-sm);font-weight:500;
+  transition:background .12s ease,border-color .12s ease,color .12s ease;
+}
+.btn-secondary:hover{background:var(--border);color:var(--ink);border-color:var(--ink-muted)}
+
+.sidebar-group{margin-top:18px}
+
+/* Sidebar tabs */
+.sidebar-tabs{
+  display:flex;gap:4px;padding:4px 4px 8px;border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+.sidebar-tab{
+  display:flex;align-items:center;gap:6px;flex:1;padding:8px 6px;
+  border-radius:var(--radius-sm);background:transparent;border:1px solid transparent;
+  color:var(--ink-muted);font-size:var(--fs-sm);font-weight:500;
+  cursor:pointer;transition:background .12s ease,border-color .12s ease,color .12s ease;
+}
+.sidebar-tab:hover{background:var(--accent-soft);color:var(--accent-deep);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sidebar-tab.active{background:var(--accent-soft);color:var(--accent-deep);border-color:color-mix(in srgb,var(--accent) 33%,transparent)}
+.sidebar-tab svg{flex-shrink:0}
+
+.sidebar-label{
+  font-size:var(--fs-xs);font-weight:700;letter-spacing:0.06em;
+  color:var(--ink-faint);text-transform:uppercase;padding:0 4px 6px;
+}
+.test-item{
+  display:flex;align-items:center;justify-content:space-between;gap:4px;
+  padding:8px 9px;border-radius:var(--radius-sm);margin-bottom:3px;
+  cursor:pointer;background:transparent;border:1px solid transparent;
+  transition:background .12s ease,border-color .12s ease;
+}
+.test-item:hover{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.test-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 33%,transparent)}
+.test-item-info{min-width:0}
+.test-item-level{font-size:var(--fs-base);font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.test-item-meta{font-size:var(--fs-xs);color:var(--ink-muted);font-family:var(--font-mono);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.test-item-actions{display:flex;gap:3px;flex-shrink:0}
+.confirm-delete{display:flex;gap:3px}
+
+/* Main content */
+.main{flex:1;min-width:0;padding:20px 24px 32px;overflow-y:auto}
+.panel{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.panel-header{padding:16px;border-bottom:1px solid var(--border)}
+.panel-body{padding:16px}
+
+/* Forms */
+.field{display:block;font-size:var(--fs-sm);font-weight:500;color:var(--ink-muted);margin-bottom:var(--gap-sm)}
+.field>div{margin-top:4px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+@media (max-width:640px){.form-grid{grid-template-columns:1fr}}
+.form-actions{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+
+/* Stat row */
+.stat-row{
+  display:flex;gap:28px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 18px;margin:14px 0;
+}
+.stat-block{
+  display:flex;flex-direction:column;min-width:0
+}
+.stat-label{
+  font-size:var(--fs-xs);color:var(--ink-faint);text-transform:uppercase;
+  letter-spacing:0.05em;font-weight:600;
+}
+.stat-value{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-top:2px}
+.stat-sub{font-size:var(--fs-sm);color:var(--ink-muted);margin-top:1px}
+
+/* Chart container */
+.chart-wrap{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 8px 8px;
+}
+.chart-empty{
+  font-size:var(--fs-sm);color:var(--ink-faint);text-align:center;padding:40px 0;
+}
+
+/* Run log table */
+.run-log{margin-top:18px}
+.run-log-header{
+  font-size:var(--fs-xs);font-weight:700;letter-spacing:0.05em;
+  color:var(--ink-faint);text-transform:uppercase;margin-bottom:8px;
+}
+.run-log-table{
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--panel);
+}
+.run-row{
+  display:flex;align-items:center;gap:12px;padding:9px 14px;
+  border-left:3px solid var(--accent);border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);font-size:var(--fs-sm);
+}
+.run-row:last-child{border-bottom:none}
+.run-date{color:var(--ink-muted);width:64px;flex-shrink:0}
+.run-value{width:90px;flex-shrink:0}
+.run-z{width:70px;flex-shrink:0}
+.run-flags{flex:1;display:flex;gap:4px;flex-wrap:wrap}
+.run-operator{color:var(--ink-muted);font-size:var(--fs-xs);white-space:nowrap}
+.run-actions{display:flex;gap:3px;flex-shrink:0}
+
+/* Conversion calculator */
+.conv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--gap)}
+@media (max-width:640px){.conv-grid{grid-template-columns:1fr}}
+.conv-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:var(--gap);
+}
+.conv-card h4{
+  margin:0 0 var(--gap-sm);font-size:var(--fs-base);font-weight:600;
+  color:var(--ink);display:flex;align-items:center;gap:6px;
+}
+.conv-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.conv-row:last-child{margin-bottom:0}
+.conv-input{flex:1;min-width:120px}
+.conv-arrow{color:var(--ink-faint);font-family:var(--font-mono);font-size:var(--fs-base);flex-shrink:0}
+.conv-output{flex:1;min-width:120px;background:var(--bg);color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.conv-unit{font-size:var(--fs-xs);color:var(--ink-muted);font-family:var(--font-mono);white-space:nowrap}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:var(--gap);flex-wrap:wrap}
+.tab{
+  padding:8px 14px;border:none;background:none;color:var(--ink-muted);
+  font-size:var(--fs-sm);font-weight:500;border-radius:var(--radius-sm) var(--radius-sm) 0 0;
+  margin-bottom:-1px;border-bottom:2px solid transparent;
+  transition:color .12s ease,border-color .12s ease,background .12s ease;
+}
+.tab:hover{color:var(--ink);background:var(--accent-soft)}
+.tab.active{color:var(--accent-deep);border-bottom-color:var(--accent);background:var(--accent-soft)}
+.tab-panel[hidden]{display:none}
+
+/* Empty state */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:60px 20px;color:var(--ink-muted);
+}
+.empty-state-icon{color:var(--ink-faint);margin-bottom:12px}
+.empty-state-text{font-size:var(--fs-sm);max-width:340px;line-height:1.6;margin:0 0 14px}
+
+/* Modal overlay */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(22,35,28,0.4);
+  display:flex;align-items:center;justify-content:center;padding:var(--gap);
+  z-index:100;animation:fadeIn .15s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;max-width:440px;width:100%;max-height:85vh;overflow:auto;
+  animation:slideUp .2s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-size:var(--fs-lg);font-weight:700;margin:0 0 4px}
+.modal-desc{font-size:var(--fs-sm);color:var(--ink-muted);margin:0 0 var(--gap);line-height:1.5}
+.modal-error{font-size:var(--fs-sm);color:var(--reject);display:flex;align-items:center;gap:5px;margin-bottom:10px}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div class="app" id="app">
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-brand">
+      <div class="header-icon" aria-hidden="true">
+        <svg class="icon icon-18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21a3 3 0 0 1-3 3h-1v-9"/><path d="M21 12a3 3 0 0 0-3-3h-4"/><path d="M3 3v18h18"/><path d="M8 13h8"/><path d="M10 11h4"/></svg>
+      </div>
+      <div>
+        <div class="header-title">Levey–Jennings QC Console</div>
+        <div class="header-sub">Westgard multirule monitoring</div>
+      </div>
+    </div>
+    <div class="header-status" id="saveStatus" aria-live="polite">
+      <span class="badge badge-info" id="saveBadge">SAVED</span>
+      <button class="btn-ghost" id="btnThemeToggle" aria-label="Toggle theme" title="Toggle dark/light mode" style="margin-left:8px">
+        <svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
+  </header>
 
+  <!-- Main layout -->
+  <div class="app-main">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="QC Tests">
+      <button class="btn-primary" id="btnNewTest" aria-label="Add new analyte / control level">
+        <svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New analyte / level
+      </button>
+
+      <div class="sidebar-group" id="sidebarGroups" aria-live="polite">
+        <!-- populated by JS -->
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main" role="main" id="mainContent">
+      <!-- Empty / New Test / Test Panel rendered here -->
+    </main>
+  </div>
+</div>
+
+<!-- Modal template (cloned by JS) -->
+<template id="modalTemplate">
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle"></div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-error" id="modalError" hidden></div>
+      <div id="modalBody"></div>
+      <div class="form-actions" style="margin-top:16px" id="modalActions"></div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================================================
+     APPLICATION LOGIC
+     ============================================================ -->
 <script>
-(function(){
-  "use strict";
+// ===== CONSTANTS & RULES =====
+const RULE_LABELS = {
+  "1_2s": { label: "1₂s", desc: "Warning — one control beyond ±2SD", kind: "warning" },
+  "1_3s": { label: "1₃s", desc: "Reject — one control beyond ±3SD", kind: "reject" },
+  "2_2s": { label: "2₂s", desc: "Reject — two consecutive controls beyond same ±2SD", kind: "reject" },
+  "R_4s": { label: "R₄s", desc: "Reject — range between consecutive controls exceeds 4SD", kind: "reject" },
+  "4_1s": { label: "4₁s", desc: "Reject — four consecutive controls beyond same ±1SD", kind: "reject" },
+  "10x":  { label: "10x̄", desc: "Reject — ten consecutive controls on same side of mean", kind: "reject" },
+};
+const REJECT_RULES = ["1_3s", "2_2s", "R_4s", "4_1s", "10x"];
+const STORAGE_KEY = "qc-data-v2";
+const UID = () => crypto.randomUUID?.() ?? Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+const FMT_DATE = (iso) => new Date(iso + "T00:00:00").toLocaleDateString(undefined, {month:"short",day:"numeric"});
 
-  var COLORS = { accent:"#1F6F5C", warn:"#B8842E", reject:"#AB3A34", grid:"#E3E9E3", accentDeep:"#134E40", inkFaint:"#8B978F", inkMuted:"#5D6D63", accentSoft:"#DFEEE8", warnSoft:"#F6EAD3", rejectSoft:"#F5DEDC" };
+// ===== WESTGARD EVALUATION =====
+function evaluateSeries(zScores) {
+  return zScores.map((_, i) => {
+    const upTo = zScores.slice(0, i + 1);
+    const last = upTo[upTo.length - 1];
+    const flags = [];
+    if (Math.abs(last) > 3) flags.push("1_3s");
+    if (Math.abs(last) > 2) flags.push("1_2s");
+    if (upTo.length >= 2) {
+      const prev = upTo[upTo.length - 2];
+      if (Math.abs(last) > 2 && Math.abs(prev) > 2 && Math.sign(last) === Math.sign(prev)) flags.push("2_2s");
+      if (Math.abs(last - prev) > 4) flags.push("R_4s");
+    }
+    if (upTo.length >= 4) {
+      const last4 = upTo.slice(-4);
+      if (last4.every(z => z > 1) || last4.every(z => z < -1)) flags.push("4_1s");
+    }
+    if (upTo.length >= 10) {
+      const last10 = upTo.slice(-10);
+      if (last10.every(z => z > 0) || last10.every(z => z < 0)) flags.push("10x");
+    }
+    const isReject = flags.some(f => REJECT_RULES.includes(f));
+    const status = isReject ? "reject" : flags.includes("1_2s") ? "warning" : "accept";
+    return { flags, status };
+  });
+}
 
-  var RULE_LABELS = {
-    "1_2s": { label: "1\u2082s", kind: "warning" },
-    "1_3s": { label: "1\u2083s", kind: "reject" },
-    "2_2s": { label: "2\u2082s", kind: "reject" },
-    "R_4s": { label: "R\u2084s", kind: "reject" },
-    "4_1s": { label: "4\u2081s", kind: "reject" },
-    "10x":  { label: "10x\u0304", kind: "reject" }
+// ===== UNIT CONVERSION TABLE =====
+const CONVERSIONS = {
+  "Glucose": { from: "mg/dL", to: "mmol/L", factor: 0.0555, reverse: 18.018 },
+  "Cholesterol (Total/HDL/LDL)": { from: "mg/dL", to: "mmol/L", factor: 0.02586, reverse: 38.67 },
+  "Triglycerides": { from: "mg/dL", to: "mmol/L", factor: 0.01129, reverse: 88.57 },
+  "Bilirubin (Total/Direct)": { from: "mg/dL", to: "µmol/L", factor: 17.1, reverse: 0.0585 },
+  "Creatinine": { from: "mg/dL", to: "µmol/L", factor: 88.4, reverse: 0.0113 },
+  "Urea / BUN": { from: "mg/dL", to: "mmol/L", factor: 0.357, reverse: 2.8 },
+  "Hemoglobin": { from: "g/dL", to: "g/L", factor: 10, reverse: 0.1 },
+  "Calcium": { from: "mg/dL", to: "mmol/L", factor: 0.2495, reverse: 4.008 },
+  "Sodium / Potassium / Chloride": { from: "mEq/L", to: "mmol/L", factor: 1, reverse: 1 },
+};
+
+// ===== STATE =====
+let state = {
+  tests: [],
+  runs: [],
+  selectedTestId: null,
+  loaded: false,
+  saveState: "idle",
+  showNewTest: false,
+  pendingDelete: null,
+  activeTab: "chart", // chart | log
+  sidebarTab: "tests", // tests | convert | settings
+};
+
+// ===== DOM REFERENCES =====
+const app = document.getElementById("app");
+const mainContent = document.getElementById("mainContent");
+const sidebarGroups = document.getElementById("sidebarGroups");
+const saveBadge = document.getElementById("saveBadge");
+const btnNewTest = document.getElementById("btnNewTest");
+
+// ===== STORAGE (localStorage with fallback) =====
+const storage = {
+  get(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.error("Storage write failed:", e);
+      return false;
+    }
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); } catch {}
+  }
+};
+
+// ===== RENDER HELPERS =====
+function setSaveStatus(s) {
+  state.saveState = s;
+  saveBadge.textContent = s === "saving" ? "SAVING…" : s === "error" ? "SAVE FAILED" : "SAVED";
+  saveBadge.className = "badge " +
+    (s === "saving" ? "badge-info" : s === "error" ? "badge-reject" : "badge-accept");
+}
+
+function badge(status, text) {
+  const cls = status === "reject" ? "badge-reject" : status === "warning" ? "badge-warning" : "badge-accept";
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function flagBadges(flags) {
+  if (!flags.length) return '<span style="color:var(--ink-faint)">—</span>';
+  return flags.map(f => {
+    const r = RULE_LABELS[f];
+    const cls = r.kind === "reject" ? "badge-reject" : "badge-warning";
+    return `<span class="badge ${cls}">${r.label}</span>`;
+  }).join("");
+}
+
+function statusColor(status) {
+  return status === "reject" ? "var(--reject)" : status === "warning" ? "var(--warn)" : "var(--accent)";
+}
+
+// ===== COMPONENT RENDERERS =====
+function renderSidebar() {
+  const { tests, runs, selectedTestId, pendingDelete, sidebarTab } = state;
+  const grouped = {};
+  tests.forEach(t => { (grouped[t.analyte] = grouped[t.analyte] || []).push(t); });
+
+  const tabButtons = `
+    <div class="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+      <button class="sidebar-tab ${sidebarTab==="tests"?"active":""}" role="tab" aria-selected="${sidebarTab==="tests"}" data-sidebartab="tests">
+        <svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 13h8"/><path d="M10 11h4"/></svg>
+        <span>Tests</span>
+      </button>
+      <button class="sidebar-tab ${sidebarTab==="convert"?"active":""}" role="tab" aria-selected="${sidebarTab==="convert"}" data-sidebartab="convert">
+        <svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 1 1 2.12 9.36L1 14"/></svg>
+        <span>Converter</span>
+      </button>
+      <button class="sidebar-tab ${sidebarTab==="settings"?"active":""}" role="tab" aria-selected="${sidebarTab==="settings"}" data-sidebartab="settings">
+        <svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  `;
+
+  if (sidebarTab === "convert") {
+    sidebarGroups.innerHTML = tabButtons + renderConvertPanel();
+    bindSidebarTabs();
+    bindConvertPanel();
+    return;
+  }
+  if (sidebarTab === "settings") {
+    sidebarGroups.innerHTML = tabButtons + renderSettingsPanel(tests.find(t => t.id === selectedTestId) || null);
+    bindSidebarTabs();
+    bindSettingsPanel(tests.find(t => t.id === selectedTestId) || null);
+    return;
+  }
+
+  // Tests tab
+  if (!tests.length) {
+    sidebarGroups.innerHTML = tabButtons + `
+      <p style="font-size:var(--fs-sm);color:var(--ink-faint);padding:8px 4px;line-height:1.5">
+        No QC tests defined yet. Add an analyte and control level to start charting.
+      </p>`;
+    bindSidebarTabs();
+    return;
+  }
+
+  sidebarGroups.innerHTML = tabButtons + Object.entries(grouped).map(([analyte, list]) => `
+    <div class="sidebar-group">
+      <div class="sidebar-label">${analyte}</div>
+      ${list.map(t => {
+        const nRuns = runs.filter(r => r.testId === t.id).length;
+        const confirming = pendingDelete && pendingDelete.type === "test" && pendingDelete.id === t.id;
+        const active = selectedTestId === t.id;
+        const safeAnalyte = escapeHtml(t.analyte);
+        const safeLevel = escapeHtml(t.level);
+        const safeUnit = escapeHtml(t.unit || "—");
+        return `
+          <div class="test-item ${active ? "active" : ""}" data-test-id="${t.id}" tabindex="0" role="button" aria-pressed="${active}" aria-label="${safeAnalyte} ${safeLevel}, ${nRuns} runs">
+            <div class="test-item-info">
+              <div class="test-item-level">${safeLevel}</div>
+              <div class="test-item-meta">${nRuns} run${nRuns===1?"":"s"} · ${safeUnit}</div>
+            </div>
+            <div class="test-item-actions">
+              ${!confirming ? `
+                <button class="btn-ghost" data-action="delete-test" data-id="${t.id}" aria-label="Delete ${safeAnalyte} ${safeLevel}" title="Delete">
+                  <svg class="icon icon-13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              ` : `
+                <div class="confirm-delete">
+                  <button class="btn-danger" data-action="confirm-delete-test" data-id="${t.id}" aria-label="Confirm delete" title="Confirm"><svg class="icon icon-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                  <button class="btn-ghost" data-action="cancel-delete" aria-label="Cancel delete" title="Cancel"><svg class="icon icon-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `).join("");
+
+  bindSidebarTabs();
+  // Bind test item events
+  sidebarGroups.querySelectorAll(".test-item").forEach(el => {
+    el.addEventListener("click", e => {
+      if (e.target.closest("button")) return;
+      state.selectedTestId = el.dataset.testId;
+      state.activeTab = "chart";
+      renderAll();
+    });
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        state.selectedTestId = el.dataset.testId;
+        state.activeTab = "chart";
+        renderAll();
+      }
+    });
+  });
+  sidebarGroups.querySelectorAll("[data-action='delete-test']").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    state.pendingDelete = { type: "test", id: b.dataset.id };
+    renderSidebar();
+  }));
+  sidebarGroups.querySelectorAll("[data-action='confirm-delete-test']").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    deleteTest(b.dataset.id);
+  }));
+  sidebarGroups.querySelectorAll("[data-action='cancel-delete']").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    state.pendingDelete = null;
+    renderSidebar();
+  }));
+}
+
+function bindSidebarTabs() {
+  sidebarGroups.querySelectorAll(".sidebar-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.sidebarTab = btn.dataset.sidebartab;
+      renderSidebar();
+    });
+  });
+}
+
+function renderMain() {
+  const { tests, selectedTestId, showNewTest, activeTab } = state;
+  const selectedTest = tests.find(t => t.id === selectedTestId) || null;
+
+  if (showNewTest) {
+    mainContent.innerHTML = renderNewTestForm();
+    bindNewTestForm();
+    return;
+  }
+  if (!selectedTest) {
+    mainContent.innerHTML = renderEmptyState(tests.length > 0);
+    document.getElementById("btnEmptyNewTest")?.addEventListener("click", () => {
+      state.showNewTest = true; renderAll();
+    });
+    return;
+  }
+
+  // Tabs (only Chart and Log now)
+  mainContent.innerHTML = `
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button class="tab ${activeTab==="chart"?"active":""}" role="tab" aria-selected="${activeTab==="chart"}" data-tab="chart">Levey–Jennings Chart</button>
+      <button class="tab ${activeTab==="log"?"active":""}" role="tab" aria-selected="${activeTab==="log"}" data-tab="log">Run Log</button>
+    </div>
+    <div class="tab-panel" id="panel-chart" role="tabpanel" ${activeTab!=="chart"?"hidden":""}>${renderChartPanel(selectedTest)}</div>
+    <div class="tab-panel" id="panel-log" role="tabpanel" ${activeTab!=="log"?"hidden":""}>${renderLogPanel(selectedTest)}</div>
+  `;
+
+  // Tab switching
+  mainContent.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.activeTab = btn.dataset.tab;
+      renderMain();
+    });
+  });
+
+  // Bind panel-specific events
+  if (activeTab === "chart") bindChartPanel(selectedTest);
+  if (activeTab === "log") bindLogPanel(selectedTest);
+}
+
+// Unified chart panel binding: form submit + tooltip
+function bindChartPanel(test) {
+  bindChartPanelForm(test);
+  // Tooltip on SVG circles
+  const wrap = mainContent.querySelector(".chart-wrap");
+  const tooltip = wrap?.querySelector("#chartTooltip");
+  const circles = wrap?.querySelectorAll("circle[data-tooltip]");
+  circles?.forEach(c => {
+    c.addEventListener("mouseenter", e => {
+      const data = JSON.parse(c.dataset.tooltip);
+      showTooltip(tooltip, e.clientX, e.clientY, data);
+    });
+    c.addEventListener("mousemove", e => {
+      tooltip.style.left = (e.clientX + 12) + "px";
+      tooltip.style.top = (e.clientY - 8) + "px";
+    });
+    c.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+  });
+}
+
+function renderEmptyState(hasTests) {
+  return `
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">
+        <svg class="icon icon-28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21a3 3 0 0 1-3 3h-1v-9"/><path d="M21 12a3 3 0 0 0-3-3h-4"/><path d="M3 3v18h18"/><path d="M8 13h8"/><path d="M10 11h4"/></svg>
+      </div>
+      <p class="empty-state-text">${hasTests
+        ? "Select an analyte and control level from the left to view its Levey–Jennings chart."
+        : "Define your first analyte and control level to begin logging daily QC results."}</p>
+      ${!hasTests ? `
+        <button class="btn-primary" id="btnEmptyNewTest" style="width:auto">
+          <svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a test
+        </button>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderNewTestForm() {
+  return `
+    <form id="newTestForm" class="panel" style="max-width:440px;margin:0 auto">
+      <div class="panel-header">
+        <div style="font-size:var(--fs-lg);font-weight:700;margin-bottom:4px">New analyte / control level</div>
+        <p style="font-size:var(--fs-sm);color:var(--ink-muted);margin:0;line-height:1.5">
+          Establish the target mean and SD from ≥20 replicate measurements over ≥20 days
+          (or take them from the control lot's assay sheet) before charting live results.
+        </p>
+      </div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <label class="field">Analyte<div><input type="text" name="analyte" placeholder="e.g. Glucose" required autocomplete="off"></div></label>
+          <label class="field">Control level<div><input type="text" name="level" placeholder="e.g. Level 2" required autocomplete="off"></div></label>
+          <label class="field">Unit<div><input type="text" name="unit" placeholder="mg/dL" autocomplete="off"></div></label>
+          <label class="field">Lot number (optional)<div><input type="text" name="lot" placeholder="e.g. 48213" autocomplete="off"></div></label>
+          <label class="field">Target mean<div><input type="number" step="any" name="mean" required></div></label>
+          <label class="field">Target SD<div><input type="number" step="any" name="sd" required min="0.0001"></div></label>
+        </div>
+        <div class="modal-error" id="newTestError" hidden></div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" style="width:auto;padding:8px 16px;font-size:var(--fs-sm);font-weight:600">
+            <svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Save test
+          </button>
+          <button type="button" class="btn-secondary" id="btnCancelNewTest">Cancel</button>
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function bindNewTestForm() {
+  const form = document.getElementById("newTestForm");
+  const errorEl = document.getElementById("newTestError");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const analyte = fd.get("analyte").trim();
+    const level = fd.get("level").trim();
+    if (!analyte || !level) { showError(errorEl, "Analyte and level are required."); return; }
+    const mean = parseFloat(fd.get("mean"));
+    const sd = parseFloat(fd.get("sd"));
+    if (isNaN(mean) || isNaN(sd) || sd <= 0) { showError(errorEl, "Enter a valid target mean and a positive SD."); return; }
+    addTest({
+      analyte, level,
+      unit: fd.get("unit").trim(),
+      lot: fd.get("lot").trim(),
+      mean, sd
+    });
+  });
+  document.getElementById("btnCancelNewTest").addEventListener("click", () => {
+    state.showNewTest = false; renderAll();
+  });
+}
+
+function renderChartPanel(test) {
+  const series = getSeriesData(test);
+  const observed = getObservedStats(test, series);
+
+  if (!series.length) {
+    return `
+      <div class="chart-wrap">
+        <div class="chart-empty">No runs logged yet for this level. Add today's control result below.</div>
+        ${renderRunEntryForm(test)}
+      </div>
+    `;
+  }
+
+  // Chart data for Recharts-like rendering via SVG
+  const chartSvg = renderChartSVG(test, series, observed);
+  const safeAnalyte = escapeHtml(test.analyte);
+  const safeLevel = escapeHtml(test.level);
+  const safeUnit = escapeHtml(test.unit);
+  const safeLot = test.lot ? escapeHtml(test.lot) : null;
+
+  return `
+    <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <div>
+        <h2 style="font-size:var(--fs-xl);font-weight:700;margin:0">${safeAnalyte} · ${safeLevel}</h2>
+        <div style="font-size:var(--fs-sm);color:var(--ink-muted);font-family:var(--font-mono);margin-top:2px">
+          target ${test.mean} ± ${test.sd} ${safeUnit} ${safeLot ? `· lot ${safeLot}` : ""}
+        </div>
+      </div>
+      ${observed.last ? badge(observed.last.status, observed.last.status.toUpperCase()) : ""}
+    </div>
+
+    ${observed ? `
+    <div class="stat-row">
+      <div class="stat-block"><div class="stat-label">Runs</div><div class="stat-value">${observed.n}</div></div>
+      <div class="stat-block"><div class="stat-label">Observed mean</div><div class="stat-value">${observed.mean.toFixed(2)}</div><div class="stat-sub">target ${test.mean}</div></div>
+      <div class="stat-block"><div class="stat-label">Observed SD</div><div class="stat-value">${observed.sd.toFixed(2)}</div><div class="stat-sub">target ${test.sd}</div></div>
+      <div class="stat-block"><div class="stat-label">Observed CV</div><div class="stat-value">${observed.cv.toFixed(1)}%</div></div>
+      <div class="stat-block"><div class="stat-label">In control</div><div class="stat-value">${observed.counts.accept}/${observed.n}</div></div>
+      ${(observed.counts.reject>0||observed.counts.warning>0)?`<div class="stat-block"><div class="stat-label">Flagged</div><div class="stat-value">${observed.counts.reject}R / ${observed.counts.warning}W</div></div>`:""}
+    </div>
+    ` : ""}
+
+    <div class="chart-wrap" style="position:relative">${chartSvg}</div>
+    ${renderRunEntryForm(test)}
+  `;
+}
+
+function renderChartSVG(test, series, observed) {
+  const { mean, sd } = test;
+  const n = series.length;
+  const width = 900; // logical width, scales via viewBox
+  const height = 340;
+  const margin = { top: 24, right: 120, bottom: 40, left: 60 };
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+
+  // Y domain: mean ± 3.5 SD + padding
+  const yPad = sd * 0.7;
+  const yMin = mean - 3.5 * sd - yPad;
+  const yMax = mean + 3.5 * sd + yPad;
+  const yScale = v => margin.top + innerH * (1 - (v - yMin) / (yMax - yMin));
+  const xScale = (seq) => margin.left + innerW * (seq - 1) / Math.max(1, n - 1);
+
+  // Grid lines (horizontal)
+  const gridLines = [];
+  const majorTicks = [mean - 3*sd, mean - 2*sd, mean - 1*sd, mean, mean + 1*sd, mean + 2*sd, mean + 3*sd];
+  majorTicks.forEach(v => {
+    const y = yScale(v);
+    if (y >= margin.top && y <= margin.top + innerH) {
+      gridLines.push(`<line x1="${margin.left}" y1="${y}" x2="${margin.left+innerW}" y2="${y}" stroke="var(--grid)" stroke-width="1" stroke-dasharray="${v===mean?'0':v===mean-2*sd||v===mean+2*sd?'0':'3,3'}" />`);
+      // Label on right
+      const label = v === mean ? "mean" : v > mean ? `+${((v-mean)/sd).toFixed(0)}SD` : `${((v-mean)/sd).toFixed(0)}SD`;
+      gridLines.push(`<text x="${width-10}" y="${y+3}" font-family="var(--font-mono)" font-size="9" fill="var(--ink-faint)" text-anchor="end">${label}</text>`);
+    }
+  });
+
+  // Zone backgrounds
+  const zones = [
+    { y1: mean + 2*sd, y2: mean + 3*sd, fill: "var(--warn)", opacity: 0.06 },
+    { y1: mean - 3*sd, y2: mean - 2*sd, fill: "var(--warn)", opacity: 0.06 },
+    { y1: mean - 2*sd, y2: mean + 2*sd, fill: "var(--accent)", opacity: 0.05 },
+  ];
+  const zoneRects = zones.map(z => {
+    const y1 = yScale(z.y1), y2 = yScale(z.y2);
+    const top = Math.min(y1, y2), h = Math.abs(y2 - y1);
+    return `<rect x="${margin.left}" y="${top}" width="${innerW}" height="${h}" fill="${z.fill}" fill-opacity="${z.opacity}" />`;
+  }).join("");
+
+  // Mean line
+  const meanY = yScale(mean);
+  const meanLine = `<line x1="${margin.left}" y1="${meanY}" x2="${margin.left+innerW}" y2="${meanY}" stroke="var(--accent-deep)" stroke-width="1.4" />`;
+
+  // Connecting line
+  const linePath = series.map((d,i) => `${i===0?"M":"L"} ${xScale(d.seq)} ${yScale(d.value)}`).join(" ");
+  const lineEl = `<path d="${linePath}" fill="none" stroke="var(--ink-faint)" stroke-width="1" />`;
+
+  // Dots
+  const dots = series.map(d => {
+    const cx = xScale(d.seq), cy = yScale(d.value);
+    const r = d.status === "reject" ? 4.5 : 3.5;
+    const fill = statusColor(d.status);
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="var(--panel)" stroke-width="1.2" data-tooltip="${escapeHtml(JSON.stringify({...d, test}))}" />`;
+  }).join("");
+
+  // X axis ticks (dates)
+  const xTicks = series.map(d => {
+    const x = xScale(d.seq);
+    return `<text x="${x}" y="${height - 18}" font-family="var(--font-mono)" font-size="10" fill="var(--ink-muted)" text-anchor="middle" dominant-baseline="hanging">${d.dateLabel}</text>`;
+  }).join("");
+
+  // Y axis ticks (values)
+  const yTicks = [];
+  const tickVals = [];
+  for (let v = Math.ceil(yMin); v <= yMax; v += sd) {
+    if (v >= yMin && v <= yMax) tickVals.push(v);
+  }
+  tickVals.forEach(v => {
+    const y = yScale(v);
+    yTicks.push(`<line x1="${margin.left-6}" y1="${y}" x2="${margin.left}" y2="${y}" stroke="var(--border)" />`);
+    yTicks.push(`<text x="${margin.left-10}" y="${y+3}" font-family="var(--font-mono)" font-size="10" fill="var(--ink-muted)" text-anchor="end">${v.toFixed(test.sd<1?2:1)}</text>`);
+  });
+
+  // Axis lines
+  const axes = `
+    <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top+innerH}" stroke="var(--border)" />
+    <line x1="${margin.left}" y1="${margin.top+innerH}" x2="${margin.left+innerW}" y2="${margin.top+innerH}" stroke="var(--border)" />
+  `;
+
+  const safeChartLabel = escapeHtml(test.analyte) + " " + escapeHtml(test.level);
+  return `
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block" role="img" aria-label="Levey–Jennings chart for ${safeChartLabel}">
+      <defs>
+        <clipPath id="chartClip"><rect x="${margin.left}" y="${margin.top}" width="${innerW}" height="${innerH}" /></clipPath>
+      </defs>
+      ${zoneRects}
+      ${gridLines.join("")}
+      ${meanLine}
+      <g clip-path="url(#chartClip)">
+        ${lineEl}
+        ${dots}
+      </g>
+      ${axes}
+      ${xTicks}
+      ${yTicks.join("")}
+    </svg>
+    <div id="chartTooltip" style="position:absolute;pointer-events:none;z-index:10;display:none"></div>
+  `;
+}
+
+function renderRunEntryForm(test) {
+  return `
+    <form id="runEntryForm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:14px">
+      <label class="field" style="margin:0"><div><input type="date" name="date" id="runDate" required></div></label>
+      <label class="field" style="margin:0;min-width:130px"><div><input type="number" step="any" name="value" id="runValue" placeholder="0.00" required style="width:100%"></div></label>
+      <label class="field" style="margin:0;min-width:130px"><div><input type="text" name="operator" id="runOperator" placeholder="optional"></div></label>
+      <label class="field" style="margin:0;min-width:200px;flex:1"><div><input type="text" name="comment" id="runComment" placeholder="optional"></div></label>
+      <button type="submit" class="btn-primary" style="margin-bottom:12px;padding:9px 16px;font-size:var(--fs-sm);font-weight:600">
+        <svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Log run
+      </button>
+    </form>
+    <div id="runEntryError" style="font-size:var(--fs-sm);color:var(--reject);margin-top:6px;display:none"></div>
+  `;
+}
+
+function bindChartPanelForm(test) {
+  const form = document.getElementById("runEntryForm");
+  const errorEl = document.getElementById("runEntryError");
+  const today = new Date().toISOString().slice(0,10);
+  form.date.value = today;
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const v = parseFloat(form.value.value);
+    if (isNaN(v)) { showError(errorEl, "Enter a numeric result."); return; }
+    if (!form.date.value) { showError(errorEl, "Pick a date."); return; }
+    addRun({
+      testId: test.id,
+      date: form.date.value,
+      value: v,
+      operator: form.operator.value.trim(),
+      comment: form.comment.value.trim()
+    });
+    form.value.value = ""; form.comment.value = ""; hideError(errorEl);
+  });
+}
+
+function renderLogPanel(test) {
+  const series = getSeriesData(test);
+  if (!series.length) {
+    return `<div class="chart-empty">No runs logged yet.</div>`;
+  }
+  const rows = series.slice().reverse().map(d => `
+    <div class="run-row" data-run-id="${d.id}" style="border-left-color:${statusColor(d.status)}">
+      <span class="run-date">${d.dateLabel}</span>
+      <span class="run-value">${d.value} ${test.unit}</span>
+      <span class="run-z" style="color:${statusColor(d.status)}">${d.z>=0?"+":""}${d.z.toFixed(2)}SD</span>
+      <span class="run-flags">${flagBadges(d.flags)}</span>
+      ${d.operator ? `<span class="run-operator">${escapeHtml(d.operator)}</span>` : ""}
+      <div class="run-actions">
+        <button class="btn-ghost" data-action="delete-run" data-id="${d.id}" aria-label="Delete run" title="Delete"><svg class="icon icon-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </div>
+    </div>
+  `).join("");
+  return `<div class="run-log-table">${rows}</div>`;
+}
+
+function bindLogPanel(test) {
+  mainContent.querySelectorAll("[data-action='delete-run']").forEach(b => {
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      state.pendingDelete = { type: "run", id: b.dataset.id };
+      renderLogPanel(test); // re-render just log panel with confirm
+      bindLogPanelConfirm(test);
+    });
+  });
+}
+
+function bindLogPanelConfirm(test) {
+  mainContent.querySelectorAll("[data-action='confirm-delete-run']").forEach(b => {
+    b.addEventListener("click", e => { e.stopPropagation(); deleteRun(b.dataset.id); });
+  });
+  mainContent.querySelectorAll("[data-action='cancel-delete']").forEach(b => {
+    b.addEventListener("click", e => { e.stopPropagation(); state.pendingDelete = null; renderMain(); });
+  });
+}
+
+function renderConvertPanel() {
+  const cards = Object.entries(CONVERSIONS).map(([name, cfg]) => `
+    <div class="conv-card">
+      <h4><svg class="icon icon-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 1 1 2.12 9.36L1 14"/></svg> ${escapeHtml(name)}</h4>
+      <div class="conv-row">
+        <input type="number" step="any" class="conv-input" data-dir="forward" data-factor="${cfg.factor}" placeholder="Enter ${cfg.from}" aria-label="Input ${cfg.from}">
+        <span class="conv-arrow">→</span>
+        <input type="text" class="conv-output" readonly placeholder="${cfg.to}" aria-label="Output ${cfg.to}">
+        <span class="conv-unit">${cfg.to}</span>
+      </div>
+      <div class="conv-row">
+        <input type="number" step="any" class="conv-input" data-dir="reverse" data-factor="${cfg.reverse}" placeholder="Enter ${cfg.to}" aria-label="Input ${cfg.to}">
+        <span class="conv-arrow">→</span>
+        <input type="text" class="conv-output" readonly placeholder="${cfg.from}" aria-label="Output ${cfg.from}">
+        <span class="conv-unit">${cfg.from}</span>
+      </div>
+    </div>
+  `).join("");
+
+  // Custom converter
+  return `
+    <div style="max-width:900px">
+      ${cards}
+      <div class="conv-card">
+        <h4><svg class="icon icon-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M2 12h20"/></svg> Calcium correction (Hypo-/Hyperalbuminemia)</h4>
+        <p style="font-size:var(--fs-xs);color:var(--ink-muted);margin:0 0 10px">Corrected Ca = Measured Ca + 0.8 × (4.0 - Albumin) — all in mg/dL & g/dL</p>
+        <div class="conv-row">
+          <input type="number" step="0.01" id="caMeasured" class="conv-input" placeholder="Measured Ca (mg/dL)" aria-label="Measured calcium mg/dL" style="max-width:180px">
+          <span class="conv-arrow">+</span>
+          <input type="number" step="0.1" id="albValue" class="conv-input" placeholder="Albumin (g/dL)" aria-label="Albumin g/dL" style="max-width:140px">
+          <span class="conv-arrow">=</span>
+          <input type="text" id="caCorrected" class="conv-output" readonly aria-label="Corrected calcium mg/dL" style="min-width:120px">
+        </div>
+        <div class="conv-row" style="margin-top:8px">
+          <input type="number" step="0.01" id="caMeasuredMmol" class="conv-input" placeholder="Measured Ca (mmol/L)" aria-label="Measured calcium mmol/L" style="max-width:180px">
+          <span class="conv-arrow">+</span>
+          <input type="number" step="1" id="albValueG" class="conv-input" placeholder="Albumin (g/L)" aria-label="Albumin g/L" style="max-width:140px">
+          <span class="conv-arrow">=</span>
+          <input type="text" id="caCorrectedMmol" class="conv-output" readonly aria-label="Corrected calcium mmol/L" style="min-width:120px">
+        </div>
+      </div>
+      <div class="conv-card">
+        <h4><svg class="icon icon-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Custom converter</h4>
+        <div class="conv-row">
+          <input type="number" step="any" id="customFactor" class="conv-input" placeholder="Multiply by" style="max-width:140px" value="1">
+          <span class="conv-arrow">×</span>
+          <input type="number" step="any" id="customInput" class="conv-input" placeholder="Input value" aria-label="Input value">
+          <span class="conv-arrow">=</span>
+          <input type="text" id="customOutput" class="conv-output" readonly aria-label="Output value">
+        </div>
+        <div class="conv-row" style="margin-top:8px">
+          <input type="number" step="any" id="customDivInput" class="conv-input" placeholder="Input value" aria-label="Input value">
+          <span class="conv-arrow">÷</span>
+          <input type="number" step="any" id="customDivFactor" class="conv-input" placeholder="Divide by" style="max-width:140px" value="1">
+          <span class="conv-arrow">=</span>
+          <input type="text" id="customDivOutput" class="conv-output" readonly aria-label="Output value">
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindConvertPanel() {
+  // Standard converters
+  document.querySelectorAll(".conv-input[data-dir]").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const factor = parseFloat(inp.dataset.factor);
+      const val = parseFloat(inp.value);
+      const row = inp.closest(".conv-row");
+      const out = row.querySelector(".conv-output");
+      out.value = isNaN(val) ? "" : (val * factor).toFixed(4).replace(/\.?0+$/,"");
+    });
+  });
+  // Calcium correction (mg/dL)
+  const caMeasured = document.getElementById("caMeasured");
+  const albValue = document.getElementById("albValue");
+  const caCorrected = document.getElementById("caCorrected");
+  [caMeasured, albValue].forEach(el => el?.addEventListener("input", () => {
+    const ca = parseFloat(caMeasured.value);
+    const alb = parseFloat(albValue.value);
+    caCorrected.value = (isNaN(ca)||isNaN(alb)) ? "" : (ca + 0.8 * (4.0 - alb)).toFixed(2).replace(/\.?0+$/,"");
+  }));
+  // Calcium correction (mmol/L)
+  const caMeasuredMmol = document.getElementById("caMeasuredMmol");
+  const albValueG = document.getElementById("albValueG");
+  const caCorrectedMmol = document.getElementById("caCorrectedMmol");
+  [caMeasuredMmol, albValueG].forEach(el => el?.addEventListener("input", () => {
+    const ca = parseFloat(caMeasuredMmol.value);
+    const alb = parseFloat(albValueG.value);
+    // Formula: Corrected Ca = Measured Ca + 0.02 × (40 - Albumin in g/L)
+    caCorrectedMmol.value = (isNaN(ca)||isNaN(alb)) ? "" : (ca + 0.02 * (40 - alb)).toFixed(2).replace(/\.?0+$/,"");
+  }));
+  // Custom multiply
+  const mulIn = document.getElementById("customInput");
+  const mulFactor = document.getElementById("customFactor");
+  const mulOut = document.getElementById("customOutput");
+  [mulIn, mulFactor].forEach(el => el?.addEventListener("input", () => {
+    const a = parseFloat(mulIn.value), b = parseFloat(mulFactor.value);
+    mulOut.value = (isNaN(a)||isNaN(b)) ? "" : (a*b).toFixed(4).replace(/\.?0+$/,"");
+  }));
+  // Custom divide
+  const divIn = document.getElementById("customDivInput");
+  const divFactor = document.getElementById("customDivFactor");
+  const divOut = document.getElementById("customDivOutput");
+  [divIn, divFactor].forEach(el => el?.addEventListener("input", () => {
+    const a = parseFloat(divIn.value), b = parseFloat(divFactor.value);
+    divOut.value = (isNaN(a)||isNaN(b)||b===0) ? "" : (a/b).toFixed(4).replace(/\.?0+$/,"");
+  }));
+}
+
+function renderSettingsPanel(test) {
+  return `
+    <div style="max-width:700px">
+      <div class="panel" style="margin-bottom:var(--gap)">
+        <div class="panel-header">
+          <div style="font-size:var(--fs-lg);font-weight:700">Data Management</div>
+          <p style="font-size:var(--fs-sm);color:var(--ink-muted);margin:0">Export, import, or reset all QC data.</p>
+        </div>
+        <div class="panel-body" style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-primary" id="btnExportJSON" style="width:auto"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export All Data (JSON)</button>
+          <button class="btn-primary" id="btnExportCSV" style="width:auto"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Runs (CSV)</button>
+          <label class="btn-secondary" style="width:auto;display:flex;align-items:center;justify-content:center;cursor:pointer">
+            <svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 10 12 15 7 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Import Data (JSON)
+            <input type="file" id="importFile" accept=".json" hidden style="position:absolute;opacity:0">
+          </label>
+          <button class="btn-secondary" id="btnSeedSample" style="width:auto"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Load Sample Data</button>
+          <button class="btn-secondary" id="btnClearAll" style="width:auto;color:var(--reject);border-color:var(--reject)"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All Data</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div style="font-size:var(--fs-lg);font-weight:700">Current Test: ${test ? `${escapeHtml(test.analyte)} · ${escapeHtml(test.level)}` : "—"}</div>
+          <p style="font-size:var(--fs-sm);color:var(--ink-muted);margin:0">Test-specific actions.</p>
+        </div>
+        <div class="panel-body" style="display:flex;gap:12px;flex-wrap:wrap">
+          ${test ? `
+            <button class="btn-secondary" id="btnExportTestCSV" style="width:auto"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export This Test Runs (CSV)</button>
+            <button class="btn-secondary" id="btnDeleteTestRuns" style="width:auto;color:var(--reject);border-color:var(--reject)"><svg class="icon icon-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete All Runs for This Test</button>
+          ` : ""}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div style="font-size:var(--fs-lg);font-weight:700">Westgard Rules Reference</div>
+        </div>
+        <div class="panel-body">
+          <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm)">
+            <thead><tr style="text-align:left;border-bottom:1px solid var(--border)"><th style="padding:8px;color:var(--ink-muted)">Rule</th><th style="padding:8px;color:var(--ink-muted)">Description</th><th style="padding:8px;color:var(--ink-muted)">Type</th></tr></thead>
+            <tbody>
+              ${Object.entries(RULE_LABELS).map(([k,v])=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px;font-family:var(--font-mono)">${v.label}</td><td style="padding:8px">${v.desc}</td><td style="padding:8px">${badge(v.kind, v.kind.toUpperCase())}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindSettingsPanel(test) {
+  document.getElementById("btnExportJSON")?.addEventListener("click", exportAllJSON);
+  document.getElementById("btnExportCSV")?.addEventListener("click", exportAllCSV);
+  document.getElementById("importFile")?.addEventListener("change", importJSON);
+  document.getElementById("btnSeedSample")?.addEventListener("click", seedSampleData);
+  document.getElementById("btnClearAll")?.addEventListener("click", confirmClearAll);
+  document.getElementById("btnExportTestCSV")?.addEventListener("click", () => exportTestCSV(test));
+  document.getElementById("btnDeleteTestRuns")?.addEventListener("click", () => confirmDeleteTestRuns(test));
+}
+
+// ===== DATA ACCESS =====
+function getSeriesData(test) {
+  if (!test) return [];
+  const list = state.runs
+    .filter(r => r.testId === test.id)
+    .slice()
+    .sort((a,b) => a.date === b.date ? a.createdAt - b.createdAt : a.date.localeCompare(b.date));
+  const zScores = list.map(r => (r.value - test.mean) / test.sd);
+  const evals = evaluateSeries(zScores);
+  return list.map((r,i) => ({
+    ...r,
+    seq: i+1,
+    z: zScores[i],
+    dateLabel: FMT_DATE(r.date),
+    ...evals[i]
+  }));
+}
+
+function getObservedStats(test, series) {
+  if (!series.length) return null;
+  const vals = series.map(d => d.value);
+  const n = vals.length;
+  const mean = vals.reduce((a,b)=>a+b,0)/n;
+  const sd = n>1 ? Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/(n-1)) : 0;
+  const cv = mean !== 0 ? (sd/mean)*100 : 0;
+  const counts = series.reduce((acc,d)=>{acc[d.status]=(acc[d.status]||0)+1;return acc},{accept:0,warning:0,reject:0});
+  return { n, mean, sd, cv, counts, last: series[series.length-1] };
+}
+
+// ===== STATE MUTATIONS =====
+function addTest(t) {
+  const test = { id: UID(), ...t };
+  state.tests.push(test);
+  state.selectedTestId = test.id;
+  state.showNewTest = false;
+  saveAndRender();
+}
+
+function deleteTest(id) {
+  state.tests = state.tests.filter(t => t.id !== id);
+  state.runs = state.runs.filter(r => r.testId !== id);
+  if (state.selectedTestId === id) state.selectedTestId = state.tests[0]?.id || null;
+  state.pendingDelete = null;
+  saveAndRender();
+}
+
+function addRun(r) {
+  state.runs.push({ id: UID(), createdAt: Date.now(), ...r });
+  saveAndRender();
+}
+
+function deleteRun(id) {
+  state.runs = state.runs.filter(r => r.id !== id);
+  state.pendingDelete = null;
+  saveAndRender();
+}
+
+function saveAndRender() {
+  setSaveStatus("saving");
+  const ok = storage.set(STORAGE_KEY, { tests: state.tests, runs: state.runs });
+  setSaveStatus(ok ? "idle" : "error");
+  renderAll();
+}
+
+function loadData() {
+  const data = storage.get(STORAGE_KEY);
+  if (data) {
+    state.tests = data.tests || [];
+    state.runs = data.runs || [];
+    if (state.tests.length && !state.selectedTestId) state.selectedTestId = state.tests[0].id;
+  }
+  state.loaded = true;
+  renderAll();
+}
+
+// ===== EXPORT / IMPORT =====
+function exportAllJSON() {
+  const data = { tests: state.tests, runs: state.runs, exportedAt: new Date().toISOString() };
+  downloadFile(JSON.stringify(data, null, 2), "qc-backup.json", "application/json");
+}
+
+function exportAllCSV() {
+  const rows = [["Test ID","Analyte","Level","Unit","Lot","Target Mean","Target SD","Date","Run Value","Operator","Comment","Z-Score","Flags","Status"]];
+  state.runs.forEach(r => {
+    const t = state.tests.find(x => x.id === r.testId);
+    if (!t) return;
+    const z = (r.value - t.mean) / t.sd;
+    const evals = evaluateSeries([z]);
+    rows.push([
+      r.testId, t.analyte, t.level, t.unit, t.lot, t.mean, t.sd,
+      r.date, r.value, r.operator, r.comment,
+      z.toFixed(2), evals[0].flags.join(";"), evals[0].status
+    ]);
+  });
+  downloadFile(rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n"), "qc-all-runs.csv", "text/csv");
+}
+
+function exportTestCSV(test) {
+  const runs = state.runs.filter(r => r.testId === test.id);
+  const rows = [["Date","Run Value","Operator","Comment","Z-Score","Flags","Status"]];
+  runs.sort((a,b)=>a.date.localeCompare(b.date)).forEach((r,i) => {
+    const z = (r.value - test.mean) / test.sd;
+    const evals = evaluateSeries([z]);
+    rows.push([r.date, r.value, r.operator, r.comment, z.toFixed(2), evals[0].flags.join(";"), evals[0].status]);
+  });
+  const safeFilename = `qc-${escapeHtml(test.analyte).replace(/[^a-z0-9_-]/gi,'_')}-${escapeHtml(test.level).replace(/[^a-z0-9_-]/gi,'_')}.csv`;
+  downloadFile(rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n"), safeFilename, "text/csv");
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  // Limit file size (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    alert("File too large (max 2MB).");
+    e.target.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      // Strict schema validation
+      if (!data || !Array.isArray(data.tests) || !Array.isArray(data.runs)) {
+        alert("Invalid file format: missing tests[] or runs[].");
+        e.target.value = "";
+        return;
+      }
+      // Validate each test object
+      const validTests = data.tests.filter(t =>
+        t && typeof t.id === "string" &&
+        typeof t.analyte === "string" && t.analyte.length <= 100 &&
+        typeof t.level === "string" && t.level.length <= 50 &&
+        typeof t.unit === "string" && t.unit.length <= 20 &&
+        typeof t.mean === "number" && isFinite(t.mean) &&
+        typeof t.sd === "number" && isFinite(t.sd) && t.sd > 0 &&
+        (t.lot === undefined || (typeof t.lot === "string" && t.lot.length <= 50))
+      );
+      // Validate each run object
+      const validRuns = data.runs.filter(r =>
+        r && typeof r.id === "string" &&
+        typeof r.testId === "string" &&
+        typeof r.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+        typeof r.value === "number" && isFinite(r.value) &&
+        (r.operator === undefined || (typeof r.operator === "string" && r.operator.length <= 50)) &&
+        (r.comment === undefined || (typeof r.comment === "string" && r.comment.length <= 200)) &&
+        (r.createdAt === undefined || typeof r.createdAt === "number")
+      );
+      if (validTests.length !== data.tests.length || validRuns.length !== data.runs.length) {
+        alert("Some records were rejected due to invalid format.");
+      }
+      state.tests = validTests;
+      state.runs = validRuns;
+      state.selectedTestId = state.tests[0]?.id || null;
+      saveAndRender();
+      alert(`Imported ${validTests.length} tests, ${validRuns.length} runs.`);
+    } catch { alert("Failed to parse JSON."); }
+    e.target.value = "";
   };
-  var REJECT_RULES = ["1_3s","2_2s","R_4s","4_1s","10x"];
+  reader.readAsText(file);
+}
 
-  function evaluateSeries(zScores){
-    return zScores.map(function(_, i){
-      var upTo = zScores.slice(0, i+1);
-      var last = upTo[upTo.length-1];
-      var flags = [];
-      if (Math.abs(last) > 3) flags.push("1_3s");
-      if (Math.abs(last) > 2) flags.push("1_2s");
-      if (upTo.length >= 2){
-        var prev = upTo[upTo.length-2];
-        if (Math.abs(last) > 2 && Math.abs(prev) > 2 && Math.sign(last) === Math.sign(prev)) flags.push("2_2s");
-        if (Math.abs(last - prev) > 4) flags.push("R_4s");
-      }
-      if (upTo.length >= 4){
-        var last4 = upTo.slice(-4);
-        if (last4.every(function(z){return z>1;}) || last4.every(function(z){return z<-1;})) flags.push("4_1s");
-      }
-      if (upTo.length >= 10){
-        var last10 = upTo.slice(-10);
-        if (last10.every(function(z){return z>0;}) || last10.every(function(z){return z<0;})) flags.push("10x");
-      }
-      var isReject = flags.some(function(f){return REJECT_RULES.indexOf(f) !== -1;});
-      var status = isReject ? "reject" : (flags.indexOf("1_2s") !== -1 ? "warning" : "accept");
-      return { flags: flags, status: status };
+function seedSampleData() {
+  if (state.tests.length) {
+    if (!confirm("This will add sample data alongside existing tests. Continue?")) return;
+  }
+  const sampleTests = [
+    { analyte: "Glucose", level: "Level 1", unit: "mg/dL", mean: 90, sd: 3, lot: "GLC-2024-001" },
+    { analyte: "Glucose", level: "Level 2", unit: "mg/dL", mean: 280, sd: 8, lot: "GLC-2024-002" },
+    { analyte: "Cholesterol", level: "Level 1", unit: "mg/dL", mean: 150, sd: 5, lot: "CHOL-2024-001" },
+    { analyte: "Creatinine", level: "Level 1", unit: "mg/dL", mean: 1.0, sd: 0.05, lot: "CREAT-2024-001" },
+  ];
+  sampleTests.forEach(t => state.tests.push({ id: UID(), ...t }));
+
+  // Generate ~30 days of runs per test
+  const today = new Date();
+  state.tests.forEach(test => {
+    for (let d = 29; d >= 0; d--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - d);
+      const iso = date.toISOString().slice(0,10);
+      // Simulate mostly in-control with occasional flags
+      let val = test.mean + (Math.random()-0.5)*2*test.sd;
+      if (Math.random() < 0.05) val = test.mean + (Math.random()>0.5?3.5:-3.5)*test.sd; // 1_3s
+      else if (Math.random() < 0.08) val = test.mean + (Math.random()>0.5?2.5:-2.5)*test.sd; // 1_2s
+      state.runs.push({ id: UID(), createdAt: date.getTime(), testId: test.id, date: iso, value: Number(val.toFixed(2)), operator: "Tech A", comment: "" });
+    }
+  });
+  saveAndRender();
+}
+
+function confirmClearAll() {
+  if (confirm("Delete ALL tests and runs? This cannot be undone.")) {
+    state.tests = []; state.runs = []; state.selectedTestId = null;
+    storage.remove(STORAGE_KEY);
+    saveAndRender();
+  }
+}
+
+function confirmDeleteTestRuns(test) {
+  if (confirm(`Delete all runs for ${escapeHtml(test.analyte)} · ${escapeHtml(test.level)}?`)) {
+    state.runs = state.runs.filter(r => r.testId !== test.id);
+    saveAndRender();
+  }
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.style.display = "none";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== MODAL HELPERS =====
+function showError(el, msg) { el.textContent = msg; el.hidden = false; }
+function hideError(el) { el.hidden = true; el.textContent = ""; }
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ===== THEME HANDLING =====
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  updateThemeIcon();
+}
+
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  if (saved) {
+    applyTheme(saved);
+  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    applyTheme("dark");
+  }
+}
+
+function bindThemeToggle() {
+  const btn = document.getElementById("btnThemeToggle");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      applyTheme(current === "dark" ? "light" : "dark");
     });
   }
+  updateThemeIcon();
+}
 
-  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
-  function fmtDate(iso){
-    var d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  }
-  function statusColor(s){ return s === "reject" ? COLORS.reject : s === "warning" ? COLORS.warn : COLORS.accent; }
-  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
-  }); }
+function updateThemeIcon() {
+  const btn = document.getElementById("btnThemeToggle");
+  if (!btn) return;
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  btn.innerHTML = dark
+    ? `<svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    : `<svg class="icon icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
+}
 
-  // ---------- state ----------
-  var state = { tests: [], runs: [], selectedTestId: null, view: "panel", pendingDelete: null, saveState: "idle" };
+// ===== MAIN RENDER =====
+function renderAll() {
+  renderSidebar();
+  renderMain();
+  // Bind global buttons
+  btnNewTest.onclick = () => { state.showNewTest = true; renderAll(); };
+  bindThemeToggle();
+}
 
-  function loadState(){
-    try {
-      var raw = localStorage.getItem("qc-data");
-      if (raw){
-        var parsed = JSON.parse(raw);
-        state.tests = parsed.tests || [];
-        state.runs = parsed.runs || [];
-        if (state.tests.length) state.selectedTestId = state.tests[0].id;
-      }
-    } catch(e) { /* first run or storage unavailable */ }
-  }
-  function persist(){
-    try {
-      localStorage.setItem("qc-data", JSON.stringify({ tests: state.tests, runs: state.runs }));
-      state.saveState = "idle";
-    } catch(e){
-      state.saveState = "error";
-    }
-  }
-
-  function seriesFor(test){
-    if (!test) return [];
-    var list = state.runs.filter(function(r){ return r.testId === test.id; })
-      .slice()
-      .sort(function(a,b){ return a.date === b.date ? a.createdAt - b.createdAt : a.date.localeCompare(b.date); });
-    var zScores = list.map(function(r){ return (r.value - test.mean) / test.sd; });
-    var evals = evaluateSeries(zScores);
-    return list.map(function(r, i){
-      var merged = {};
-      for (var k in r) merged[k] = r[k];
-      merged.seq = i+1;
-      merged.z = zScores[i];
-      merged.dateLabel = fmtDate(r.date);
-      merged.flags = evals[i].flags;
-      merged.status = evals[i].status;
-      return merged;
-    });
-  }
-
-  function observedStats(seriesData){
-    if (!seriesData.length) return null;
-    var vals = seriesData.map(function(d){ return d.value; });
-    var n = vals.length;
-    var mean = vals.reduce(function(a,b){return a+b;},0) / n;
-    var sd = n > 1 ? Math.sqrt(vals.reduce(function(a,b){return a+Math.pow(b-mean,2);},0) / (n-1)) : 0;
-    var cv = mean !== 0 ? (sd/mean)*100 : 0;
-    var counts = { accept:0, warning:0, reject:0 };
-    seriesData.forEach(function(d){ counts[d.status] = (counts[d.status]||0)+1; });
-    return { n:n, mean:mean, sd:sd, cv:cv, counts:counts, last: seriesData[seriesData.length-1] };
-  }
-
-  // ---------- SVG chart ----------
-  function buildChartSVG(test, seriesData){
-    var W = 680, H = 300, left = 46, right = 44, top = 16, bottom = 26;
-    var plotW = W - left - right, plotH = H - top - bottom;
-    var mean = test.mean, sd = test.sd;
-    var pad = sd * 0.7;
-    var yMin = mean - 3.5*sd - pad, yMax = mean + 3.5*sd + pad;
-    function y(v){ return top + (yMax - v) / (yMax - yMin) * plotH; }
-    var n = seriesData.length;
-    function x(seq){ return n <= 1 ? left + plotW/2 : left + (seq-1)/(n-1) * plotW; }
-
-    var parts = [];
-    parts.push('<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">');
-
-    // shaded bands
-    parts.push('<rect x="'+left+'" y="'+y(mean+3*sd)+'" width="'+plotW+'" height="'+(y(mean+2*sd)-y(mean+3*sd))+'" fill="'+COLORS.warn+'" opacity="0.08"/>');
-    parts.push('<rect x="'+left+'" y="'+y(mean-2*sd)+'" width="'+plotW+'" height="'+(y(mean-3*sd)-y(mean-2*sd))+'" fill="'+COLORS.warn+'" opacity="0.08"/>');
-    parts.push('<rect x="'+left+'" y="'+y(mean+2*sd)+'" width="'+plotW+'" height="'+(y(mean-2*sd)-y(mean+2*sd))+'" fill="'+COLORS.accent+'" opacity="0.06"/>');
-
-    // reference lines
-    [1,2,3].forEach(function(k){
-      [1,-1].forEach(function(sign){
-        var yy = y(mean + sign*k*sd);
-        parts.push('<line x1="'+left+'" y1="'+yy+'" x2="'+(left+plotW)+'" y2="'+yy+'" stroke="'+COLORS.grid+'" stroke-width="1" stroke-dasharray="3 3"/>');
-        parts.push('<text x="'+(left+plotW+4)+'" y="'+(yy+3)+'" font-size="9" fill="'+COLORS.inkFaint+'" font-family="ui-monospace,monospace">'+(sign>0?'+':'\u2212')+k+'SD</text>');
-      });
-    });
-    var yMeanPx = y(mean);
-    parts.push('<line x1="'+left+'" y1="'+yMeanPx+'" x2="'+(left+plotW)+'" y2="'+yMeanPx+'" stroke="'+COLORS.accentDeep+'" stroke-width="1.4"/>');
-    parts.push('<text x="'+(left+plotW+4)+'" y="'+(yMeanPx+3)+'" font-size="9" fill="'+COLORS.inkMuted+'" font-family="ui-monospace,monospace">mean</text>');
-
-    if (n > 0){
-      // connecting line
-      var pts = seriesData.map(function(d){ return x(d.seq)+","+y(d.value); }).join(" ");
-      parts.push('<polyline points="'+pts+'" fill="none" stroke="'+COLORS.inkFaint+'" stroke-width="1"/>');
-      // points
-      seriesData.forEach(function(d){
-        var r = d.status === "reject" ? 4.5 : 3.5;
-        parts.push('<circle cx="'+x(d.seq)+'" cy="'+y(d.value)+'" r="'+r+'" fill="'+statusColor(d.status)+'" stroke="#fff" stroke-width="1.2"/>');
-      });
-      // x labels (thin out if crowded)
-      var interval = Math.max(1, Math.ceil(n/7));
-      seriesData.forEach(function(d, i){
-        if (i % interval === 0 || i === n-1){
-          parts.push('<text x="'+x(d.seq)+'" y="'+(H-6)+'" font-size="9" fill="'+COLORS.inkMuted+'" font-family="ui-monospace,monospace" text-anchor="middle">'+esc(d.dateLabel)+'</text>');
-        }
-      });
-    }
-    parts.push('<line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(left+plotW)+'" y2="'+(top+plotH)+'" stroke="'+COLORS.grid+'"/>');
-    parts.push('</svg>');
-    return parts.join("");
-  }
-
-  // ---------- render ----------
-  function badgeHTML(status, text){
-    return '<span class="badge '+status+'">'+esc(text)+'</span>';
-  }
-
-  function render(){
-    var html = '';
-    html += '<header class="app-header"><div class="brand">'
-      + '<div class="brand-icon"><svg width="14" height="14" viewBox="0 0 64 64"><path d="M26 12h12v14l9 18a5 5 0 01-4.5 7H21.5A5 5 0 0117 44l9-18z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><line x1="23" y1="34" x2="41" y2="34" stroke="#fff" stroke-width="4"/></svg></div>'
-      + '<div><div class="brand-title">QC Console</div><div class="brand-sub">Westgard multirule monitoring</div></div>'
-      + '</div><div class="save-state">'+(state.saveState === "error" ? '<span style="color:'+COLORS.reject+'">SAVE FAILED</span>' : 'SAVED')+'</div></header>';
-
-    html += '<main>';
-
-    if (state.tests.length === 0 && !state.pendingNewTest){
-      html += '<div class="install-tip">Installed and running offline. Your QC data stays on this device only \u2014 add your first analyte below to start.</div>';
-    }
-
-    html += '<div class="tabs">';
-    var grouped = {};
-    state.tests.forEach(function(t){ (grouped[t.analyte] = grouped[t.analyte] || []).push(t); });
-    Object.keys(grouped).forEach(function(analyte){
-      grouped[analyte].forEach(function(t){
-        var active = t.id === state.selectedTestId && !state.pendingNewTest;
-        html += '<button class="tab'+(active?' active':'')+'" data-action="select-test" data-id="'+t.id+'">'+esc(analyte)+' \u00B7 '+esc(t.level)+'</button>';
-      });
-    });
-    html += '<button class="newtest-btn" data-action="show-new-test">+ New analyte / level</button>';
-    html += '</div>';
-
-    if (state.pendingNewTest){
-      html += renderNewTestForm();
-    } else {
-      var test = state.tests.find(function(t){ return t.id === state.selectedTestId; });
-      if (!test){
-        html += '<div class="empty">'+(state.tests.length ? 'Pick an analyte / level tab above.' : 'No QC tests yet. Tap \u201C+ New analyte / level\u201D to add your first control.')+'</div>';
-      } else {
-        html += renderTestPanel(test);
-      }
-    }
-
-    html += '</main>';
-    document.getElementById("app").innerHTML = html;
-    attachHandlers();
-  }
-
-  function renderNewTestForm(){
-    var e = state.formError || "";
-    return '<form class="panel" id="new-test-form">'
-      + '<h2>New analyte / control level</h2>'
-      + '<div class="hint">Establish the target mean and SD from \u226520 replicate measurements over \u226520 days, or take them from the control lot\u2019s assay sheet.</div>'
-      + '<div class="grid2">'
-      + field('Analyte','nt-analyte','text','e.g. Glucose')
-      + field('Control level','nt-level','text','e.g. Level 2')
-      + field('Unit','nt-unit','text','mg/dL')
-      + field('Lot number (optional)','nt-lot','text','e.g. 48213')
-      + field('Target mean','nt-mean','number','')
-      + field('Target SD','nt-sd','number','')
-      + '</div>'
-      + (e ? '<div class="err">\u26A0 '+esc(e)+'</div>' : '')
-      + '<div style="display:flex;gap:8px;">'
-      + '<button type="submit" class="btn btn-primary">Save test</button>'
-      + '<button type="button" class="btn btn-ghost" data-action="cancel-new-test">Cancel</button>'
-      + '</div></form>';
-  }
-  function field(label, id, type, placeholder){
-    return '<label class="field">'+esc(label)+'<input id="'+id+'" type="'+type+'" '+(type==='number'?'step="any"':'')+' placeholder="'+esc(placeholder)+'"></label>';
-  }
-
-  function renderTestPanel(test){
-    var seriesData = seriesFor(test);
-    var observed = observedStats(seriesData);
-    var html = '';
-    html += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:2px 2px 8px;">'
-      + '<div><h2>'+esc(test.analyte)+' \u00B7 '+esc(test.level)+'</h2>'
-      + '<div class="target-line">target '+test.mean+' \u00B1 '+test.sd+' '+esc(test.unit)+(test.lot ? ' \u00B7 lot '+esc(test.lot) : '')+'</div></div>'
-      + (observed && observed.last ? badgeHTML(observed.last.status, observed.last.status.toUpperCase()) : '')
-      + '<button class="icon-btn" data-action="delete-test" data-id="'+test.id+'" aria-label="Delete this test" style="margin-left:auto;">\uD83D\uDDD1</button>'
-      + '</div>';
-
-    if (state.pendingDelete && state.pendingDelete.type === 'test' && state.pendingDelete.id === test.id){
-      html += '<div class="panel" style="display:flex;align-items:center;gap:10px;"><span style="font-size:12.5px;">Delete this analyte/level and all its runs?</span>'
-        + '<div class="confirm-inline"><button class="confirm-yes" data-action="confirm-delete-test" data-id="'+test.id+'">Delete</button>'
-        + '<button class="confirm-no" data-action="cancel-delete">Cancel</button></div></div>';
-    }
-
-    if (observed){
-      html += '<div class="panel"><div class="stats-row">'
-        + stat('Runs', observed.n)
-        + stat('Observed mean', observed.mean.toFixed(2), 'target '+test.mean)
-        + stat('Observed SD', observed.sd.toFixed(2), 'target '+test.sd)
-        + stat('Observed CV', observed.cv.toFixed(1)+'%')
-        + stat('In control', observed.counts.accept+'/'+observed.n)
-        + (observed.counts.reject>0||observed.counts.warning>0 ? stat('Flagged', observed.counts.reject+'R / '+observed.counts.warning+'W') : '')
-        + '</div></div>';
-    }
-
-    html += '<div class="panel panel-tight">';
-    if (!seriesData.length){
-      html += '<div class="empty">No runs logged yet for this level. Add today\u2019s control result below.</div>';
-    } else {
-      html += buildChartSVG(test, seriesData);
-    }
-    html += '</div>';
-
-    var today = new Date().toISOString().slice(0,10);
-    html += '<form class="panel run-form" id="new-run-form" data-test-id="'+test.id+'">'
-      + '<label class="field">Date<input id="run-date" type="date" value="'+today+'"></label>'
-      + '<label class="field">Result ('+esc(test.unit||'value')+')<input id="run-value" type="number" step="any" placeholder="0.00"></label>'
-      + '<label class="field">Operator<input id="run-operator" type="text" placeholder="optional"></label>'
-      + '<label class="field">Comment<input id="run-comment" type="text" placeholder="optional"></label>'
-      + '<button type="submit" class="btn btn-primary" style="align-self:flex-start;">+ Log run</button>'
-      + (state.runFormError ? '<div class="err" style="width:100%;">\u26A0 '+esc(state.runFormError)+'</div>' : '')
-      + '</form>';
-
-    if (seriesData.length){
-      html += '<div class="run-log-head">Run log</div><div class="panel" style="padding:0;">';
-      seriesData.slice().reverse().forEach(function(d){
-        var confirming = state.pendingDelete && state.pendingDelete.type === 'run' && state.pendingDelete.id === d.id;
-        html += '<div class="run-row" style="border-left-color:'+statusColor(d.status)+';">'
-          + '<span class="run-date">'+esc(d.dateLabel)+'</span>'
-          + '<span class="run-val">'+d.value+' '+esc(test.unit)+'</span>'
-          + '<span class="run-z" style="color:'+statusColor(d.status)+';">'+(d.z>=0?'+':'')+d.z.toFixed(2)+'SD</span>'
-          + '<span class="run-flags">'+(d.flags.length ? d.flags.map(function(f){return badgeHTML(RULE_LABELS[f].kind, RULE_LABELS[f].label);}).join('') : '<span style="color:'+COLORS.inkFaint+'">\u2014</span>')+'</span>'
-          + (d.operator ? '<span style="color:'+COLORS.inkMuted+';font-size:10.5px;">'+esc(d.operator)+'</span>' : '')
-          + (!confirming
-              ? '<button class="icon-btn" data-action="delete-run" data-id="'+d.id+'" aria-label="Delete run">\uD83D\uDDD1</button>'
-              : '<div class="confirm-inline"><button class="confirm-yes" data-action="confirm-delete-run" data-id="'+d.id+'">\u2713</button><button class="confirm-no" data-action="cancel-delete">\u2715</button></div>')
-          + '</div>';
-      });
-      html += '</div>';
-    }
-    return html;
-  }
-  function stat(label, value, sub){
-    return '<div><div class="stat-label">'+esc(label)+'</div><div class="stat-value">'+esc(value)+'</div>'+(sub?'<div class="stat-sub">'+esc(sub)+'</div>':'')+'</div>';
-  }
-
-  // ---------- events ----------
-  function attachHandlers(){
-    var app = document.getElementById("app");
-
-    app.onclick = function(e){
-      var t = e.target.closest("[data-action]");
-      if (!t) return;
-      var action = t.getAttribute("data-action");
-      var id = t.getAttribute("data-id");
-
-      if (action === "select-test"){ state.selectedTestId = id; state.pendingDelete = null; render(); }
-      else if (action === "show-new-test"){ state.pendingNewTest = true; state.formError = null; render(); }
-      else if (action === "cancel-new-test"){ state.pendingNewTest = false; render(); }
-      else if (action === "delete-test"){ state.pendingDelete = { type:"test", id:id }; render(); }
-      else if (action === "delete-run"){ state.pendingDelete = { type:"run", id:id }; render(); }
-      else if (action === "cancel-delete"){ state.pendingDelete = null; render(); }
-      else if (action === "confirm-delete-test"){
-        state.tests = state.tests.filter(function(x){ return x.id !== id; });
-        state.runs = state.runs.filter(function(x){ return x.testId !== id; });
-        if (state.selectedTestId === id) state.selectedTestId = state.tests.length ? state.tests[0].id : null;
-        state.pendingDelete = null; persist(); render();
-      }
-      else if (action === "confirm-delete-run"){
-        state.runs = state.runs.filter(function(x){ return x.id !== id; });
-        state.pendingDelete = null; persist(); render();
-      }
-    };
-
-    var newTestForm = document.getElementById("new-test-form");
-    if (newTestForm){
-      newTestForm.onsubmit = function(e){
-        e.preventDefault();
-        var analyte = document.getElementById("nt-analyte").value.trim();
-        var level = document.getElementById("nt-level").value.trim();
-        var unit = document.getElementById("nt-unit").value.trim();
-        var lot = document.getElementById("nt-lot").value.trim();
-        var mean = parseFloat(document.getElementById("nt-mean").value);
-        var sd = parseFloat(document.getElementById("nt-sd").value);
-        if (!analyte || !level){ state.formError = "Analyte and level are required."; render(); return; }
-        if (isNaN(mean) || isNaN(sd) || sd <= 0){ state.formError = "Enter a valid target mean and a positive SD."; render(); return; }
-        var test = { id: uid(), analyte:analyte, level:level, unit:unit, mean:mean, sd:sd, lot:lot };
-        state.tests.push(test);
-        state.selectedTestId = test.id;
-        state.pendingNewTest = false;
-        state.formError = null;
-        persist(); render();
-      };
-    }
-
-    var runForm = document.getElementById("new-run-form");
-    if (runForm){
-      runForm.onsubmit = function(e){
-        e.preventDefault();
-        var testId = runForm.getAttribute("data-test-id");
-        var date = document.getElementById("run-date").value;
-        var value = parseFloat(document.getElementById("run-value").value);
-        var operator = document.getElementById("run-operator").value.trim();
-        var comment = document.getElementById("run-comment").value.trim();
-        if (!date){ state.runFormError = "Pick a date."; render(); return; }
-        if (isNaN(value)){ state.runFormError = "Enter a numeric result."; render(); return; }
-        state.runs.push({ id: uid(), testId:testId, date:date, value:value, operator:operator, comment:comment, createdAt: Date.now() });
-        state.runFormError = null;
-        persist(); render();
-      };
-    }
-  }
-
-  loadState();
-  render();
-})();
+// ===== INIT =====
+initTheme();
+loadData();
 </script>
 </body>
 </html>

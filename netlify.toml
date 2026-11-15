@@ -1,0 +1,27 @@
+[build]
+  publish = "."
+
+[[headers]]
+  # Cache static assets
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  # Allow font loading from Google Fonts
+  for = "/*.html"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; style-src 'self' 'sha256-1x74VvE11/ae/qiZFWo53n6ZuycA2kuVQf+OSqnqgp8=' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'sha256-7S5y4aOOq3vd1koyHjG2aYor4YWseA+M6LWHH8LsRdc='; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'"
+
+[dev]
+  command = "npx serve ."
+  port = 8888
+  publish = "."
+
+# Force HTTPS in production
+[context.production]
+  [context.production.headers]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
